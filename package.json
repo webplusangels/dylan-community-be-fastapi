@@ -1,15 +1,23 @@
 {
-  "name": "express-app",
+  "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
-  "type": "module",
+  "description": "커뮤니티의 백엔드 서버입니다.",
+  "main": "server.js",
   "scripts": {
-    "test": "node app.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "^3.3.3"
+  },
   "dependencies": {
     "express": "^4.21.1"
   }
