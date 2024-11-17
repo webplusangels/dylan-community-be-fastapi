@@ -35,3 +35,7 @@ build/
 
 # Environment variables
 .env
+constants.js
+
+# Temporal data
+data/*.json
