@@ -38,4 +38,4 @@ build/
 constants.js
 
 # Temporal data
-data/*.json
+data/
