@@ -57,7 +57,7 @@ const addUser = async (req, res) => {
         const newUser = await userModel.addUser(user);
 
         req.session.user = {
-            id: newUser.user_id,
+            user_id: newUser.user_id,
             email: newUser.email,
             nickname: newUser.nickname,
         };
