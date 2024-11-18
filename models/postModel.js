@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const { v4: uuidv4 } = require('uuid');
-const { getById, createRecord, formatDate } = require('../utils');
-const { query } = require('../db');
+const { getById, createRecord, formatDate } = require('../config/utils');
+const { query } = require('../db/db');
 
 // 포스트 생성 함수
 const createPost = async (post, userId) => {

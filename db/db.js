@@ -1,4 +1,4 @@
-const pool = require('./config/dbConfig');
+const pool = require('../config/dbConfig');
 
 // SELECT 쿼리 실행
 async function query(sql, params) {

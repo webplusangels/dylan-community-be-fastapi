@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 const postModel = require('../models/postModel');
-const { ERROR_MESSAGES } = require('../constants');
+const { ERROR_MESSAGES } = require('../config/constants');
 
 // id로 단일 포스트 조회
 const getPostById = async (req, res) => {

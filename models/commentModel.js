@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const { v4: uuidv4 } = require('uuid');
-const { getById, createRecord, formatDate } = require('../utils');
-const { query } = require('../db');
+const { getById, createRecord, formatDate } = require('../config/utils');
+const { query } = require('../db/db');
 
 // 댓글 ID로 단일 댓글 조회 함수
 const getCommentById = async (id) => {

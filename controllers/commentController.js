@@ -1,5 +1,5 @@
 const commentModel = require('../models/commentModel');
-const { ERROR_MESSAGES } = require('../constants');
+const { ERROR_MESSAGES } = require('../config/constants');
 
 // 댓글 id로 단일 댓글 조회
 const getCommentById = async (req, res) => {

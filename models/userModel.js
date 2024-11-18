@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
-const { createRecord, formatDate } = require('../utils');
-const { query } = require('../db');
+const { createRecord, formatDate } = require('../config/utils');
+const { query } = require('../db/db');
 
 // 필수 데이터 중복 확인 함수
 const isDuplicateUser = async (email, nickname, targetId = null) => {
