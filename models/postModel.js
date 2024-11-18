@@ -1,9 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-// id 추가를 위한 임시 uuid 모듈
-// const { v4: uuidv4 } = require('uuid');
-
 const postsDataPath = path.join(__dirname, '../data/posts.json');
 
 // 포스트 데이터를 읽어오는 함수
