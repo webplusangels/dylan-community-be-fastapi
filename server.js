@@ -6,6 +6,7 @@ const { DEFAULTS } = require('./constants');
 // const pagesRouter = require('./routes/pages');
 const userRoutes = require('./routes/userRoutes');
 const postRoutes = require('./routes/postRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use(
 const apiRouter = express.Router();
 apiRouter.use('/users', userRoutes); // 사용자 관련 API
 apiRouter.use('/posts', postRoutes); // 게시물 관련 API
+apiRouter.use('/comments', commentRoutes); // 댓글 관련 API
 // app.use('/', express.static('frontend/pages')); // 프론트엔드 페이지
 
 // 메인 라우터
