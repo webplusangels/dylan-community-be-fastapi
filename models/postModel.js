@@ -89,34 +89,36 @@ const getPostMetaById = async (id) => {
     }
 };
 
-// 포스트 메타 정보 업데이트 함수
-// TODO: 데이터베이스 업데이트하면 이 함수도 수정해야 함
-const updatePostMetaById = async (id, meta) => {
+// 포스트 조회수 정보 업데이트 함수
+const updatePostViewById = async (id, views) => {
     try {
         const sql = `
             UPDATE posts
-            SET views = ?, likes = ?, comments_count = ?
+            SET views = ?
             WHERE id = ?
         `;
         const existingPost = await getById('posts', id);
-        const updatedMeta = {
-            views: meta.views !== undefined ? meta.views : existingPost.views,
-            likes: meta.likes !== undefined ? meta.likes : existingPost.likes,
-            comments_count:
-                meta.comments_count !== undefined
-                    ? meta.comments_count
-                    : existingPost.comments_count,
-        };
-        await query(sql, [
-            updatedMeta.views,
-            updatedMeta.likes,
-            updatedMeta.comments_count,
-            updatedMeta.updated_at,
-            id,
-        ]);
-        return { ...existingPost, ...updatedMeta };
+        await query(sql, [views || existingPost.views, id]);
+        return { ...existingPost, views };
     } catch (error) {
-        console.error('포스트 메타 정보 업데이트 오류:', error);
+        console.error('포스트 조회수 정보 업데이트 오류:', error);
+        throw error;
+    }
+};
+
+// 포스트 좋아요 수 정보 업데이트 함수
+const updatePostLikesById = async (id, likes) => {
+    try {
+        const sql = `
+            UPDATE posts
+            SET likes = ?
+            WHERE id = ?
+        `;
+        const existingPost = await getById('posts', id);
+        await query(sql, [likes || existingPost.likes, id]);
+        return { ...existingPost, likes };
+    } catch (error) {
+        console.error('포스트 좋아요 수 정보 업데이트 오류:', error);
         throw error;
     }
 };
@@ -127,5 +129,6 @@ module.exports = {
     updatePostById,
     deletePostById,
     getPostMetaById,
-    updatePostMetaById,
+    updatePostViewById,
+    updatePostLikesById,
 };

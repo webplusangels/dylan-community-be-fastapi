@@ -76,10 +76,36 @@ const deleteCommentById = async (id) => {
     }
 };
 
+// 포스트 댓글 수 정보 업데이트 함수
+const updateCommentsCountById = async (postId) => {
+    try {
+        const sql = `
+            SELECT COUNT(*) AS count
+            FROM comments
+            WHERE post_id = ?
+        `;
+        const rows = await query(sql, [postId]);
+        const comments_count = rows[0].count;
+
+        const updateSql = `
+            UPDATE posts
+            SET comments_count = ?
+            WHERE id = ?
+        `;
+        await query(updateSql, [comments_count, postId]);
+        const existingPost = await getById('posts', postId);
+        return { ...existingPost, comments_count };
+    } catch (error) {
+        console.error('포스트 댓글 수 정보 업데이트 오류:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     getCommentById,
     createComment,
     updateCommentById,
     getPaginatedComments,
     deleteCommentById,
+    updateCommentsCountById,
 };

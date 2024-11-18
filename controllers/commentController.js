@@ -50,6 +50,8 @@ const createComment = async (req, res) => {
             postId,
             userId
         );
+        // 댓글 수 업데이트
+        await commentModel.updateCommentsCountById(postId);
         res.status(201).json({
             comment_id: commentId,
         });
@@ -95,6 +97,7 @@ const updateComment = async (req, res) => {
             return;
         }
 
+        // 댓글 작성자 검증
         if (updatedComment.user_id !== userId) {
             res.status(403).json({
                 message: '권한이 없습니다.',
@@ -167,6 +170,8 @@ const deleteComment = async (req, res) => {
             return;
         }
 
+        // 댓글 업데이트
+        await commentModel.updateCommentsCountById(comment.post_id);
         await commentModel.deleteCommentById(commentId);
         res.status(200).json({ message: '댓글 삭제 완료' });
     } catch (err) {

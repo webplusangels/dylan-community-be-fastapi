@@ -14,6 +14,9 @@ const getPostById = async (req, res) => {
             });
             return;
         }
+
+        // 조회 수 증가
+        await postModel.updatePostViewById(id, post.views + 1);
         res.status(200).json(post);
     } catch (err) {
         console.error('포스트 조회 오류:', err);
@@ -186,34 +189,6 @@ const getPostMetaById = async (req, res) => {
     }
 };
 
-// 포스트 메타 정보 업데이트
-const updatePostMetaById = async (req, res) => {
-    const { id } = req.params;
-    const { views, likes, comments_count } = req.body;
-
-    try {
-        const post = await postModel.getPostMetaById(id);
-        if (!post) {
-            res.status(404).json({
-                message: '포스트를 찾을 수 없습니다.',
-            });
-            return;
-        }
-
-        await postModel.updatePostMetaById(id, {
-            views,
-            likes,
-            comments_count,
-        });
-        res.status(200).json({ message: '포스트 메타 정보 업데이트 완료' });
-    } catch (err) {
-        console.error('포스트 메타 정보 업데이트 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
-    }
-};
-
 module.exports = {
     getPostById,
     getPaginatedPosts,
@@ -221,5 +196,4 @@ module.exports = {
     updatePostById,
     deletePostById,
     getPostMetaById,
-    updatePostMetaById,
 };
