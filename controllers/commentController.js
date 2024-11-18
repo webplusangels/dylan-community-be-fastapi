@@ -74,6 +74,15 @@ const updateComment = async (req, res) => {
         return;
     }
 
+    // 세션 검증
+    if (!req.session.user) {
+        res.status(401).json({
+            message: '로그인이 필요합니다.',
+        });
+        return;
+    }
+    const userId = req.session.user.user_id;
+
     try {
         const updatedComment = await commentModel.updateCommentById(
             content,
@@ -86,7 +95,7 @@ const updateComment = async (req, res) => {
             return;
         }
 
-        if (updatedComment.user_id !== req.session.user.user_id) {
+        if (updatedComment.user_id !== userId) {
             res.status(403).json({
                 message: '권한이 없습니다.',
             });
