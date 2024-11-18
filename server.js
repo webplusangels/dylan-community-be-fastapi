@@ -17,9 +17,9 @@ app.use(express.json());
 app.use(
     /* 세션 설정 */
     session({
-        resave: false,
-        saveUninitialized: false,
         secret: process.env.COOKIE_SECRET,
+        resave: false,
+        saveUninitialized: true,
         cookie: {
             httpOnly: true,
             secure: false,

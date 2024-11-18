@@ -15,6 +15,26 @@ const getUsers = async (req, res) => {
     }
 };
 
+// 사용자 인증
+const authenticateUser = async (email, password) => {
+    try {
+        const user = await userModel.getUserByEmail(email);
+        if (!user) {
+            return null;
+        }
+
+        const isValid = await bcrypt.compare(password, user.password);
+        if (!isValid) {
+            return null;
+        }
+
+        return user;
+    } catch (error) {
+        console.error('사용자 인증 오류:', error);
+        throw error;
+    }
+};
+
 // 사용자 추가
 const addUser = async (req, res) => {
     const { email, nickname, password, profileImagePath } = req.body;
@@ -37,7 +57,7 @@ const addUser = async (req, res) => {
         const newUser = await userModel.addUser(user);
 
         req.session.user = {
-            id: newUser.id,
+            id: newUser.user_id,
             email: newUser.email,
             nickname: newUser.nickname,
         };
@@ -157,7 +177,7 @@ const loginUser = async (req, res) => {
     }
 
     try {
-        const user = await userModel.getUserByEmail(email);
+        const user = await authenticateUser(email, password);
         if (!user) {
             res.status(401).json({
                 meesage: ERROR_MESSAGES.INVALID_CREDENTIALS,
@@ -165,17 +185,9 @@ const loginUser = async (req, res) => {
             return;
         }
 
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) {
-            res.status(401).json({
-                message: ERROR_MESSAGES.INVALID_CREDENTIALS,
-            });
-            return;
-        }
-
         // 세션 사용자 설정
         req.session.user = {
-            id: user.id,
+            user_id: user.user_id,
             email: user.email,
             nickname: user.nickname,
         };

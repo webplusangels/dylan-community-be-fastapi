@@ -1,11 +1,27 @@
 const express = require('express');
-const path = require('path');
+const postController = require('../controllers/postController');
 
 const router = express.Router();
-const pagesDir = path.join(__dirname, '../../frontend/pages');
 
-router.get('/', (req, res) => {
-    res.sendFile(path.join(pagesDir, 'login.html'));
-});
+// 페이지네이션된 포스트 목록 조회 라우트
+router.get('/', postController.getPaginatedPosts);
+
+// 포스트 생성 라우트
+router.post('/', postController.createPost);
+
+// ID로 단일 포스트 조회 라우트
+router.get('/:id', postController.getPostById);
+
+// ID로 포스트 수정 라우트
+router.put('/:id', postController.updatePostById);
+
+// ID로 포스트 삭제 라우트
+router.delete('/:id', postController.deletePostById);
+
+// 포스트 메타 정보 조회 라우트
+router.get('/:id/meta', postController.getPostMetaById);
+
+// 포스트 메타 정보 업데이트 라우트
+router.patch('/:id/meta', postController.updatePostMetaById);
 
 module.exports = router;

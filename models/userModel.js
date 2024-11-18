@@ -48,7 +48,7 @@ const addUser = async (user) => {
 
         const timestamp = new Date().toISOString();
         const newUser = {
-            id: uuidv4(),
+            user_id: uuidv4(),
             ...user,
             createdAt: timestamp,
             updatedAt: timestamp,
