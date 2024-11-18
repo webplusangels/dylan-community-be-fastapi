@@ -34,4 +34,7 @@ router.post('/:postId/comments', commentController.createComment);
 // 댓글 수정 라우트
 router.put('/:postId/comments/:commentId', commentController.updateComment);
 
+// 댓글 삭제 라우트
+router.delete('/:postId/comments/:commentId', commentController.deleteComment);
+
 module.exports = router;

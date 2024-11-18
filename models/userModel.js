@@ -50,8 +50,8 @@ const addUser = async (user) => {
         const newUser = {
             user_id: uuidv4(),
             ...user,
-            createdAt: timestamp,
-            updatedAt: timestamp,
+            created_at: timestamp,
+            updated_at: timestamp,
         };
         const users = await getUsers();
         users.push(newUser);
@@ -78,6 +78,7 @@ const getUserByEmail = async (email) => {
     }
 };
 
+// 사용자 패스워드를 업데이트하는 함수
 const updateUserPassword = async (email, hashedPassword) => {
     try {
         const users = await getUsers();
@@ -121,6 +122,7 @@ const updateUserProfile = async (id, updatedData) => {
     }
 };
 
+// 사용자 ID로 사용자 데이터를 삭제하는 함수
 const deleteUserById = async (id) => {
     try {
         const users = await getUsers();

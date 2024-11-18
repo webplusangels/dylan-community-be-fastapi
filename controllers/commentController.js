@@ -75,7 +75,7 @@ const updateComment = async (req, res) => {
     }
 
     try {
-        const updatedComment = await commentModel.updateComment(
+        const updatedComment = await commentModel.updateCommentById(
             content,
             commentId
         );
@@ -121,9 +121,51 @@ const getPaginatedComments = async (req, res) => {
     }
 };
 
+// 댓글 삭제
+const deleteComment = async (req, res) => {
+    const { commentId } = req.params;
+
+    // 세션 검증
+    if (!req.session.user) {
+        res.status(401).json({
+            message: '로그인이 필요합니다.',
+        });
+        return;
+    }
+    const userId = req.session.user.user_id;
+
+    try {
+        const comment = await commentModel.getCommentById(commentId);
+        console.log(comment);
+        if (!comment) {
+            res.status(404).json({
+                message: '댓글을 찾을 수 없습니다.',
+            });
+            return;
+        }
+
+        // 댓글 작성자 검증
+        if (comment.user_id !== userId) {
+            res.status(403).json({
+                message: '권한이 없습니다.',
+            });
+            return;
+        }
+
+        await commentModel.deleteCommentById(commentId);
+        res.status(200).json({ message: '댓글 삭제 완료' });
+    } catch (err) {
+        console.error('댓글 삭제 오류:', err);
+        res.status(500).json({
+            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        });
+    }
+};
+
 module.exports = {
     getCommentById,
     createComment,
     updateComment,
     getPaginatedComments,
+    deleteComment,
 };

@@ -20,7 +20,7 @@ const getCommentById = async (id) => {
     try {
         const comments = await getComments();
         const commentData = comments.find(
-            (comment) => comment.comment_id === Number(id)
+            (comment) => comment.comment_id === id
         );
         if (!commentData) {
             return null;
@@ -68,7 +68,7 @@ const createComment = async (comment, postId, userId) => {
 };
 
 // 댓글 수정 함수
-const updateComment = async (content, commentId) => {
+const updateCommentById = async (content, commentId) => {
     try {
         const comments = await getComments();
         const targetIndex = comments.findIndex(
@@ -107,11 +107,31 @@ const getPaginatedComments = async (postId, page, limit) => {
     }
 };
 
+// 댓글 삭제 함수
+const deleteCommentById = async (commentId) => {
+    try {
+        const comments = await getComments();
+        const targetIndex = comments.findIndex(
+            (comment) => comment.comment_id === commentId
+        );
+        if (targetIndex === -1) {
+            return null;
+        }
+        const deletedComment = comments.splice(targetIndex, 1)[0];
+        await saveComments(comments);
+        return deletedComment;
+    } catch (error) {
+        console.error('댓글 삭제 오류:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     getComments,
     getCommentById,
     saveComments,
     createComment,
-    updateComment,
+    updateCommentById,
     getPaginatedComments,
+    deleteCommentById,
 };
