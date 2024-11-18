@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const userModel = require('../models/userModel');
-const { ERROR_MESSAGES } = require('../constants');
+const { ERROR_MESSAGES } = require('../config/constants');
 
 // 사용자 목록 조회
 const getUsers = async (req, res) => {
@@ -57,7 +57,7 @@ const addUser = async (req, res) => {
         const newUser = await userModel.addUser(user);
 
         req.session.user = {
-            id: newUser.user_id,
+            user_id: newUser.user_id,
             email: newUser.email,
             nickname: newUser.nickname,
         };

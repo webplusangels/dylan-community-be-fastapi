@@ -1,91 +1,40 @@
-const fs = require('fs').promises;
-const path = require('path');
+/* eslint-disable camelcase */
 const { v4: uuidv4 } = require('uuid');
-
-const commentsDataPath = path.join(__dirname, '../data/comments.json');
-
-// 댓글 데이터를 읽어오는 함수
-const getComments = async () => {
-    try {
-        const data = await fs.readFile(commentsDataPath, 'utf-8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('JSON 파일 읽기 오류:', error);
-        throw error;
-    }
-};
+const { getById, createRecord, formatDate } = require('../config/utils');
+const { query } = require('../db/db');
 
 // 댓글 ID로 단일 댓글 조회 함수
 const getCommentById = async (id) => {
-    try {
-        const comments = await getComments();
-        const commentData = comments.find(
-            (comment) => comment.comment_id === id
-        );
-        if (!commentData) {
-            return null;
-        }
-        return commentData;
-    } catch (error) {
-        console.error('댓글 데이터 조회 오류:', error);
-        throw error;
-    }
-};
-
-// 댓글 데이터를 저장하는 함수
-const saveComments = async (comments) => {
-    try {
-        await fs.writeFile(
-            commentsDataPath,
-            JSON.stringify(comments, null, 2),
-            'utf-8'
-        );
-    } catch (error) {
-        console.error('JSON 파일 쓰기 오류:', error);
-        throw error;
-    }
+    return getById('comments', id);
 };
 
 // 댓글 생성 함수
 const createComment = async (comment, postId, userId) => {
-    try {
-        const comments = await getComments();
-        const newComment = {
-            comment_id: uuidv4(),
-            post_id: Number(postId),
-            user_id: userId,
-            ...comment,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        };
-        comments.push(newComment);
-        await saveComments(comments);
-        return newComment.comment_id;
-    } catch (error) {
-        console.error('댓글 생성 오류:', error);
-        throw error;
-    }
+    const data = {
+        comment_id: uuidv4(),
+        post_id: postId,
+        user_id: userId,
+        content: comment.content,
+        created_at: formatDate(new Date()),
+        updated_at: formatDate(new Date()),
+    };
+    return createRecord('comments', data);
 };
 
 // 댓글 수정 함수
-const updateCommentById = async (content, commentId) => {
+const updateCommentById = async (content, id) => {
     try {
-        const comments = await getComments();
-        const targetIndex = comments.findIndex(
-            (comment) => comment.comment_id === commentId
-        );
-        if (targetIndex === -1) {
-            return null;
-        }
-        const updatedComment = {
-            user_id: comments[targetIndex].user_id,
-            ...comments[targetIndex],
-            content,
-            updated_at: new Date().toISOString(),
-        };
-        comments[targetIndex] = updatedComment;
-        await saveComments(comments);
-        return updatedComment;
+        const existingComment = await getById('comments', id);
+        const sql = `
+            UPDATE comments
+            SET content = ?, updated_at = ?
+            WHERE id = ?
+        `;
+        await query(sql, [
+            content || existingComment.content,
+            formatDate(new Date()),
+            id,
+        ]);
     } catch (error) {
         console.error('댓글 수정 오류:', error);
         throw error;
@@ -93,45 +42,70 @@ const updateCommentById = async (content, commentId) => {
 };
 
 // 페이지네이션된 댓글 목록 조회 함수
-const getPaginatedComments = async (postId, page, limit) => {
+const getPaginatedComments = async (postId, lastCreatedAt, limit) => {
     try {
-        const comments = await getComments();
-        const paginatedComments = comments
-            .filter((comment) => comment.post_id === Number(postId))
-            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-            .slice((page - 1) * limit, page * limit);
-        return paginatedComments;
+        const sql = `
+            SELECT comment_id, post_id, user_id, content, created_at, updated_at
+            FROM comments
+            WHERE post_id = ? AND created_at > ?
+            ORDER BY created_at ASC
+            LIMIT ?`;
+        const rows = await query(sql, [
+            postId,
+            formatDate(lastCreatedAt),
+            limit,
+        ]);
+        return rows;
     } catch (error) {
-        console.error('댓글 데이터 조회 오류:', error);
+        console.error('댓글 데이터 조회 오류:', error.message);
         throw error;
     }
 };
 
 // 댓글 삭제 함수
-const deleteCommentById = async (commentId) => {
+const deleteCommentById = async (id) => {
     try {
-        const comments = await getComments();
-        const targetIndex = comments.findIndex(
-            (comment) => comment.comment_id === commentId
-        );
-        if (targetIndex === -1) {
-            return null;
-        }
-        const deletedComment = comments.splice(targetIndex, 1)[0];
-        await saveComments(comments);
-        return deletedComment;
+        const sql = `
+            DELETE FROM comments
+            WHERE id = ?
+        `;
+        await query(sql, [id]);
     } catch (error) {
         console.error('댓글 삭제 오류:', error);
         throw error;
     }
 };
 
+// 포스트 댓글 수 정보 업데이트 함수
+const updateCommentsCountById = async (postId) => {
+    try {
+        const sql = `
+            SELECT COUNT(*) AS count
+            FROM comments
+            WHERE post_id = ?
+        `;
+        const rows = await query(sql, [postId]);
+        const comments_count = rows[0].count;
+
+        const updateSql = `
+            UPDATE posts
+            SET comments_count = ?
+            WHERE id = ?
+        `;
+        await query(updateSql, [comments_count, postId]);
+        const existingPost = await getById('posts', postId);
+        return { ...existingPost, comments_count };
+    } catch (error) {
+        console.error('포스트 댓글 수 정보 업데이트 오류:', error);
+        throw error;
+    }
+};
+
 module.exports = {
-    getComments,
     getCommentById,
-    saveComments,
     createComment,
     updateCommentById,
     getPaginatedComments,
     deleteCommentById,
+    updateCommentsCountById,
 };

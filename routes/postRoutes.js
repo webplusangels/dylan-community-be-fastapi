@@ -22,9 +22,6 @@ router.delete('/:id', postController.deletePostById);
 // 포스트 메타 정보 조회 라우트
 router.get('/:id/meta', postController.getPostMetaById);
 
-// 포스트 메타 정보 업데이트 라우트
-router.patch('/:id/meta', postController.updatePostMetaById);
-
 // 포스트 ID로 댓글 목록 조회 라우트
 router.get('/:postId/comments', commentController.getPaginatedComments);
 

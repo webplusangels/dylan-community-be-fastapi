@@ -1,5 +1,6 @@
+/* eslint-disable camelcase */
 const postModel = require('../models/postModel');
-const { ERROR_MESSAGES } = require('../constants');
+const { ERROR_MESSAGES } = require('../config/constants');
 
 // id로 단일 포스트 조회
 const getPostById = async (req, res) => {
@@ -13,6 +14,9 @@ const getPostById = async (req, res) => {
             });
             return;
         }
+
+        // 조회 수 증가
+        await postModel.updatePostViewById(id, post.views + 1);
         res.status(200).json(post);
     } catch (err) {
         console.error('포스트 조회 오류:', err);
@@ -24,26 +28,22 @@ const getPostById = async (req, res) => {
 
 // 페이지네이션된 포스트 목록 조회
 const getPaginatedPosts = async (req, res) => {
-    let { page, limit } = req.query;
+    let { lastCreatedAt, limit } = req.query;
 
-    page = Number(page);
-    limit = Number(limit);
-
-    // 유효성 검사
-    if (Number.isNaN(page) || Number.isNaN(limit) || page <= 0 || limit <= 0) {
-        res.status(400).json({
-            message: '유효하지 않은 쿼리 파라미터입니다.',
-        });
-        return;
-    }
+    // 쿼리스트링 유효성 검사
+    limit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100); // 1부터 최대 100까지
+    lastCreatedAt = lastCreatedAt ? new Date(lastCreatedAt) : new Date(); // 기본값: 현재 시간
 
     try {
-        const posts = await postModel.getPaginatedPosts(page, limit);
+        // 데이터베이스에서 데이터 가져오기
+        const posts = await postModel.getPaginatedPosts(lastCreatedAt, limit);
+
+        // 결과 반환
         res.status(200).json(posts);
     } catch (err) {
         console.error('포스트 목록 조회 오류:', err);
         res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+            message: 'Failed to fetch posts',
         });
     }
 };
@@ -84,7 +84,6 @@ const createPost = async (req, res) => {
 const updatePostById = async (req, res) => {
     const { id } = req.params;
     const { title, content } = req.body;
-    const userId = req.session.user.user_id;
 
     // 필수 필드 검증
     if (!title || !content) {
@@ -93,6 +92,15 @@ const updatePostById = async (req, res) => {
         });
         return;
     }
+
+    // 세션 검증
+    if (!req.session.user) {
+        res.status(401).json({
+            message: '로그인이 필요합니다.',
+        });
+        return;
+    }
+    const userId = req.session.user.user_id;
 
     try {
         const post = await postModel.getPostById(id);
@@ -111,7 +119,7 @@ const updatePostById = async (req, res) => {
             return;
         }
 
-        await postModel.updatePostById(id, { title, content });
+        await postModel.updatePostById({ title, content }, id);
         res.status(200).json({ message: '포스트 수정 완료' });
     } catch (err) {
         console.error('포스트 수정 오류:', err);
@@ -181,34 +189,6 @@ const getPostMetaById = async (req, res) => {
     }
 };
 
-// 포스트 메타 정보 업데이트
-const updatePostMetaById = async (req, res) => {
-    const { id } = req.params;
-    const { views, likes, comments_count } = req.body;
-
-    try {
-        const post = await postModel.getPostMetaById(id);
-        if (!post) {
-            res.status(404).json({
-                message: '포스트를 찾을 수 없습니다.',
-            });
-            return;
-        }
-
-        await postModel.updatePostMetaById(id, {
-            views,
-            likes,
-            comments_count,
-        });
-        res.status(200).json({ message: '포스트 메타 정보 업데이트 완료' });
-    } catch (err) {
-        console.error('포스트 메타 정보 업데이트 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
-    }
-};
-
 module.exports = {
     getPostById,
     getPaginatedPosts,
@@ -216,5 +196,4 @@ module.exports = {
     updatePostById,
     deletePostById,
     getPostMetaById,
-    updatePostMetaById,
 };
