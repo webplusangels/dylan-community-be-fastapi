@@ -1,7 +1,3 @@
-# 커뮤니티 백엔드 서버
+# 2-dylan-lee-community-be
 
-## user-api
-
-## post-api
-
-## comment-api
+커뮤니티의 백엔드 서버입니다.
