@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 // 환경 변수가 설정되었는지 확인
@@ -8,25 +8,27 @@ if (
     !process.env.DB_PASSWORD ||
     !process.env.DB_DATABASE
 ) {
-    console.error(
-        'Database configuration is missing. Please check your .env file.'
-    );
+    console.error('데이터베이스 환경변수 설정 실패');
     process.exit(1);
 }
 
-const db = mysql.createConnection({
+const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
 });
 
-db.connect((err) => {
-    if (err) {
-        console.error('DB connection error:', err.stack);
-        process.exit(1); // 에러
-    }
-    console.log('Connected to db.');
-});
+pool.getConnection()
+    .then((conn) => {
+        console.log('데이터베이스에 연결되었습니다.');
+        conn.release();
+    })
+    .catch((err) => {
+        console.error('데이터베이스 연결 에러:', err.message);
+    });
 
-module.exports = db;
+module.exports = pool;
