@@ -22,26 +22,6 @@ const getCommentById = async (req, res) => {
     }
 };
 
-// 페이지네이션된 댓글 목록 조회
-const getPaginatedComments = async (req, res) => {
-    const { postId } = req.params;
-    const { page = 1, limit = 10 } = req.query;
-
-    try {
-        const comments = await commentModel.getPaginatedComments(
-            postId,
-            Number(page),
-            Number(limit)
-        );
-        res.status(200).json(comments);
-    } catch (err) {
-        console.error('댓글 조회 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
-    }
-};
-
 // 댓글 생성
 const createComment = async (req, res) => {
     const { postId } = req.params;
@@ -81,8 +61,69 @@ const createComment = async (req, res) => {
     }
 };
 
+// 댓글 수정
+const updateComment = async (req, res) => {
+    const { commentId } = req.params;
+    const { content } = req.body;
+
+    // 필수 필드 검증
+    if (!content) {
+        res.status(400).json({
+            message: '내용은 필수 입력 항목입니다.',
+        });
+        return;
+    }
+
+    try {
+        const updatedComment = await commentModel.updateComment(
+            content,
+            commentId
+        );
+        if (!updatedComment) {
+            res.status(404).json({
+                message: '댓글을 찾을 수 없습니다.',
+            });
+            return;
+        }
+
+        if (updatedComment.user_id !== req.session.user.user_id) {
+            res.status(403).json({
+                message: '권한이 없습니다.',
+            });
+            return;
+        }
+        res.status(200).json(updatedComment);
+    } catch (err) {
+        console.error('댓글 수정 오류:', err);
+        res.status(500).json({
+            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        });
+    }
+};
+
+// 페이지네이션된 댓글 목록 조회
+const getPaginatedComments = async (req, res) => {
+    const { postId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    try {
+        const comments = await commentModel.getPaginatedComments(
+            postId,
+            Number(page),
+            Number(limit)
+        );
+        res.status(200).json(comments);
+    } catch (err) {
+        console.error('댓글 조회 오류:', err);
+        res.status(500).json({
+            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        });
+    }
+};
+
 module.exports = {
     getCommentById,
-    getPaginatedComments,
     createComment,
+    updateComment,
+    getPaginatedComments,
 };

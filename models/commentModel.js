@@ -67,6 +67,31 @@ const createComment = async (comment, postId, userId) => {
     }
 };
 
+// 댓글 수정 함수
+const updateComment = async (content, commentId) => {
+    try {
+        const comments = await getComments();
+        const targetIndex = comments.findIndex(
+            (comment) => comment.comment_id === commentId
+        );
+        if (targetIndex === -1) {
+            return null;
+        }
+        const updatedComment = {
+            user_id: comments[targetIndex].user_id,
+            ...comments[targetIndex],
+            content,
+            updated_at: new Date().toISOString(),
+        };
+        comments[targetIndex] = updatedComment;
+        await saveComments(comments);
+        return updatedComment;
+    } catch (error) {
+        console.error('댓글 수정 오류:', error);
+        throw error;
+    }
+};
+
 // 페이지네이션된 댓글 목록 조회 함수
 const getPaginatedComments = async (postId, page, limit) => {
     try {
@@ -87,5 +112,6 @@ module.exports = {
     getCommentById,
     saveComments,
     createComment,
+    updateComment,
     getPaginatedComments,
 };

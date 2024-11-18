@@ -31,4 +31,7 @@ router.get('/:postId/comments', commentController.getPaginatedComments);
 // 포스트 ID로 댓글 생성 라우트
 router.post('/:postId/comments', commentController.createComment);
 
+// 댓글 수정 라우트
+router.put('/:postId/comments/:commentId', commentController.updateComment);
+
 module.exports = router;
