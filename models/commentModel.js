@@ -1,6 +1,53 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const postsDataPath = path.join(__dirname, '../data/posts.json');
+const commentsDataPath = path.join(__dirname, '../data/comments.json');
 
-module.exports = {};
+// 댓글 데이터를 읽어오는 함수
+const getComments = async () => {
+    try {
+        const data = await fs.readFile(commentsDataPath, 'utf-8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('JSON 파일 읽기 오류:', error);
+        throw error;
+    }
+};
+
+// 댓글 ID로 단일 댓글 조회 함수
+const getCommentById = async (id) => {
+    try {
+        const comments = await getComments();
+        const commentData = comments.find(
+            (comment) => comment.comment_id === Number(id)
+        );
+        if (!commentData) {
+            return null;
+        }
+        return commentData;
+    } catch (error) {
+        console.error('댓글 데이터 조회 오류:', error);
+        throw error;
+    }
+};
+
+// 페이지네이션된 댓글 목록 조회 함수
+const getPaginatedComments = async (postId, page, limit) => {
+    try {
+        const comments = await getComments();
+        const paginatedComments = comments
+            .filter((comment) => comment.post_id === Number(postId))
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+            .slice((page - 1) * limit, page * limit);
+        return paginatedComments;
+    } catch (error) {
+        console.error('댓글 데이터 조회 오류:', error);
+        throw error;
+    }
+};
+
+module.exports = {
+    getComments,
+    getCommentById,
+    getPaginatedComments,
+};

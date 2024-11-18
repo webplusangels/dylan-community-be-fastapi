@@ -1,5 +1,6 @@
 const express = require('express');
 const postController = require('../controllers/postController');
+const commentController = require('../controllers/commentController');
 
 const router = express.Router();
 
@@ -23,5 +24,8 @@ router.get('/:id/meta', postController.getPostMetaById);
 
 // 포스트 메타 정보 업데이트 라우트
 router.patch('/:id/meta', postController.updatePostMetaById);
+
+// 포스트 ID로 댓글 목록 조회 라우트
+router.get('/:postId/comments', commentController.getPaginatedComments);
 
 module.exports = router;
