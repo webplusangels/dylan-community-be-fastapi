@@ -46,6 +46,7 @@ const saveComments = async (comments) => {
     }
 };
 
+// 댓글 생성 함수
 const createComment = async (comment, postId, userId) => {
     try {
         const comments = await getComments();
