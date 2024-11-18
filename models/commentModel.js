@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 const commentsDataPath = path.join(__dirname, '../data/comments.json');
 
@@ -31,6 +32,40 @@ const getCommentById = async (id) => {
     }
 };
 
+// 댓글 데이터를 저장하는 함수
+const saveComments = async (comments) => {
+    try {
+        await fs.writeFile(
+            commentsDataPath,
+            JSON.stringify(comments, null, 2),
+            'utf-8'
+        );
+    } catch (error) {
+        console.error('JSON 파일 쓰기 오류:', error);
+        throw error;
+    }
+};
+
+const createComment = async (comment, postId, userId) => {
+    try {
+        const comments = await getComments();
+        const newComment = {
+            comment_id: uuidv4(),
+            post_id: Number(postId),
+            user_id: userId,
+            ...comment,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+        comments.push(newComment);
+        await saveComments(comments);
+        return newComment.comment_id;
+    } catch (error) {
+        console.error('댓글 생성 오류:', error);
+        throw error;
+    }
+};
+
 // 페이지네이션된 댓글 목록 조회 함수
 const getPaginatedComments = async (postId, page, limit) => {
     try {
@@ -49,5 +84,7 @@ const getPaginatedComments = async (postId, page, limit) => {
 module.exports = {
     getComments,
     getCommentById,
+    saveComments,
+    createComment,
     getPaginatedComments,
 };

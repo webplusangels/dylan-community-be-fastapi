@@ -42,7 +42,47 @@ const getPaginatedComments = async (req, res) => {
     }
 };
 
+// 댓글 생성
+const createComment = async (req, res) => {
+    const { postId } = req.params;
+    const { content } = req.body;
+
+    // 필수 필드 검증
+    if (!content) {
+        res.status(400).json({
+            message: '내용은 필수 입력 항목입니다.',
+        });
+        return;
+    }
+
+    // 세션 검증
+    if (!req.session.user) {
+        res.status(401).json({
+            message: '로그인이 필요합니다.',
+        });
+        return;
+    }
+    const userId = req.session.user.user_id;
+
+    try {
+        const commentId = await commentModel.createComment(
+            { content },
+            postId,
+            userId
+        );
+        res.status(201).json({
+            comment_id: commentId,
+        });
+    } catch (err) {
+        console.error('댓글 생성 오류:', err);
+        res.status(500).json({
+            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+        });
+    }
+};
+
 module.exports = {
     getCommentById,
     getPaginatedComments,
+    createComment,
 };

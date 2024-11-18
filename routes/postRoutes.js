@@ -28,4 +28,7 @@ router.patch('/:id/meta', postController.updatePostMetaById);
 // 포스트 ID로 댓글 목록 조회 라우트
 router.get('/:postId/comments', commentController.getPaginatedComments);
 
+// 포스트 ID로 댓글 생성 라우트
+router.post('/:postId/comments', commentController.createComment);
+
 module.exports = router;
