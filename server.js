@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const session = require('express-session');
-const { DEFAULTS } = require('./constants');
+const { DEFAULTS } = require('./config/constants');
 
 // const pagesRouter = require('./routes/pages');
 const userRoutes = require('./routes/userRoutes');

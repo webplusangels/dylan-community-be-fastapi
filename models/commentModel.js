@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const { v4: uuidv4 } = require('uuid');
-const { getById, createRecord, formatDate } = require('../config/utils');
-const { query } = require('../db/db');
+const { getById, createRecord, formatDate } = require('../utils/utils');
+const { query } = require('../utils/dbUtils');
 
 // 댓글 ID로 단일 댓글 조회 함수
 const getCommentById = async (id) => {
@@ -36,7 +36,7 @@ const updateCommentById = async (content, id) => {
             id,
         ]);
     } catch (error) {
-        console.error('댓글 수정 오류:', error);
+        console.error('댓글 수정 오류:', error.message);
         throw error;
     }
 };
@@ -71,7 +71,7 @@ const deleteCommentById = async (id) => {
         `;
         await query(sql, [id]);
     } catch (error) {
-        console.error('댓글 삭제 오류:', error);
+        console.error('댓글 삭제 오류:', error.message);
         throw error;
     }
 };
@@ -96,7 +96,7 @@ const updateCommentsCountById = async (postId) => {
         const existingPost = await getById('posts', postId);
         return { ...existingPost, comments_count };
     } catch (error) {
-        console.error('포스트 댓글 수 정보 업데이트 오류:', error);
+        console.error('포스트 댓글 수 정보 업데이트 오류:', error.message);
         throw error;
     }
 };

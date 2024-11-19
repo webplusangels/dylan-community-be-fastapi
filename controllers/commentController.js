@@ -1,8 +1,7 @@
 const commentModel = require('../models/commentModel');
-const { ERROR_MESSAGES } = require('../config/constants');
 
 // 댓글 id로 단일 댓글 조회
-const getCommentById = async (req, res) => {
+const getCommentById = async (req, res, next) => {
     const { commentId } = req.params;
 
     try {
@@ -16,14 +15,12 @@ const getCommentById = async (req, res) => {
         res.status(200).json(comment);
     } catch (err) {
         console.error('댓글 조회 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 댓글 생성
-const createComment = async (req, res) => {
+const createComment = async (req, res, next) => {
     const { postId } = req.params;
     const { content } = req.body;
 
@@ -57,14 +54,12 @@ const createComment = async (req, res) => {
         });
     } catch (err) {
         console.error('댓글 생성 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 댓글 수정
-const updateComment = async (req, res) => {
+const updateComment = async (req, res, next) => {
     const { commentId } = req.params;
     const { content } = req.body;
 
@@ -107,14 +102,12 @@ const updateComment = async (req, res) => {
         res.status(200).json(updatedComment);
     } catch (err) {
         console.error('댓글 수정 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 페이지네이션된 댓글 목록 조회
-const getPaginatedComments = async (req, res) => {
+const getPaginatedComments = async (req, res, next) => {
     const { postId } = req.params;
     let { lastCreatedAt, limit } = req.query;
 
@@ -134,14 +127,12 @@ const getPaginatedComments = async (req, res) => {
         res.status(200).json(comments);
     } catch (err) {
         console.error('댓글 목록 조회 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 댓글 삭제
-const deleteComment = async (req, res) => {
+const deleteComment = async (req, res, next) => {
     const { commentId } = req.params;
 
     // 세션 검증
@@ -176,9 +167,7 @@ const deleteComment = async (req, res) => {
         res.status(200).json({ message: '댓글 삭제 완료' });
     } catch (err) {
         console.error('댓글 삭제 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 

@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
-const { createRecord, formatDate } = require('../config/utils');
-const { query } = require('../db/db');
+const { createRecord, formatDate } = require('../utils/utils');
+const { query } = require('../utils/dbUtils');
 
 // 필수 데이터 중복 확인 함수
 const isDuplicateUser = async (email, nickname, targetId = null) => {
@@ -60,7 +60,7 @@ const getUserByEmail = async (email) => {
         }
         return rows[0];
     } catch (error) {
-        console.error('사용자 데이터 조회 오류:', error);
+        console.error('사용자 데이터 조회 오류:', error.message);
         throw error;
     }
 };
@@ -77,7 +77,7 @@ const updateUserPassword = async (email, hashedPassword) => {
         `;
         await query(sql, [hashedPassword, email]);
     } catch (error) {
-        console.error('패스워드 업데이트 오류:', error);
+        console.error('패스워드 업데이트 오류:', error.message);
         throw error;
     }
 };
@@ -106,7 +106,7 @@ const updateUserProfile = async (id, updatedData) => {
             id,
         ]);
     } catch (error) {
-        console.error('프로필 업데이트 오류:', error);
+        console.error('프로필 업데이트 오류:', error.message);
         throw error;
     }
 };
@@ -121,7 +121,7 @@ const deleteUserById = async (id) => {
         `;
         await query(sql, [id]);
     } catch (error) {
-        console.error('사용자 삭제 오류:', error);
+        console.error('사용자 삭제 오류:', error.message);
         throw error;
     }
 };

@@ -3,15 +3,13 @@ const userModel = require('../models/userModel');
 const { ERROR_MESSAGES } = require('../config/constants');
 
 // 사용자 목록 조회
-const getUsers = async (req, res) => {
+const getUsers = async (req, res, next) => {
     try {
         const users = await userModel.getUsers();
         res.status(200).json(users);
     } catch (err) {
         console.error('사용자 목록 조회 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
@@ -36,7 +34,7 @@ const authenticateUser = async (email, password) => {
 };
 
 // 사용자 추가
-const addUser = async (req, res) => {
+const addUser = async (req, res, next) => {
     const { email, nickname, password, profileImagePath } = req.body;
 
     // 입력 데이터 검증
@@ -65,13 +63,11 @@ const addUser = async (req, res) => {
         res.status(201).json({ message: '사용자 등록 성공' });
     } catch (err) {
         console.error('사용자 등록 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
-const getProfile = async (req, res) => {
+const getProfile = async (req, res, next) => {
     const { user } = req.session;
 
     if (!user) {
@@ -84,13 +80,11 @@ const getProfile = async (req, res) => {
         res.status(200).json(userProfile);
     } catch (err) {
         console.error('프로필 조회 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
-const updateProfile = async (req, res) => {
+const updateProfile = async (req, res, next) => {
     const { user } = req.session;
     const { nickname, profileImagePath } = req.body;
 
@@ -130,14 +124,12 @@ const updateProfile = async (req, res) => {
         });
     } catch (err) {
         console.error('프로필 업데이트 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 사용자 삭제
-const deleteProfile = async (req, res) => {
+const deleteProfile = async (req, res, next) => {
     const { user } = req.session;
 
     if (!user) {
@@ -161,14 +153,12 @@ const deleteProfile = async (req, res) => {
         });
     } catch (err) {
         console.error('사용자 삭제 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 사용자 로그인
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -195,30 +185,29 @@ const loginUser = async (req, res) => {
         res.status(200).json({ message: '로그인 성공' });
     } catch (err) {
         console.error('로그인 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 사용자 로그아웃
-const logoutUser = (req, res) => {
-    // 세션 무효화
-    req.session.destroy((err) => {
-        if (err) {
-            console.error('로그아웃 오류:', err);
-            res.status(500).json({
-                message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-            });
-            return;
-        }
-        res.clearCookie('connect.sid'); // 클라이언트 측 세션 쿠키 삭제
-        res.status(200).json({ message: '로그아웃 성공' });
-    });
+const logoutUser = (req, res, next) => {
+    try {
+        // 세션 무효화
+        req.session.destroy((err) => {
+            if (err) {
+                throw err;
+            }
+            res.clearCookie('connect.sid'); // 클라이언트 측 세션 쿠키 삭제
+            res.status(200).json({ message: '로그아웃 성공' });
+        });
+    } catch (err) {
+        console.error('로그아웃 오류:', err);
+        next(err);
+    }
 };
 
 // 패스워드 재설정
-const resetPassword = async (req, res) => {
+const resetPassword = async (req, res, next) => {
     const { password } = req.body;
 
     // 세션에서 사용자 정보 가져오기
@@ -242,19 +231,15 @@ const resetPassword = async (req, res) => {
         req.session.destroy((err) => {
             if (err) {
                 console.error('세션 무효화 오류:', err);
-                res.status(500).json({
-                    message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-                });
+                next(err);
                 return;
             }
             res.clearCookie('connect.sid'); // 클라이언트 측 세션 쿠키 삭제
+            res.status(200).json({ message: '패스워드 재설정 성공' });
         });
-        res.status(200).json({ message: '패스워드 재설정 성공' });
     } catch (err) {
         console.error('패스워드 재설정 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
