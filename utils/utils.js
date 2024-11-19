@@ -1,4 +1,4 @@
-const { query } = require('../db/db');
+const { query } = require('./dbUtils');
 
 // ID로 단일 레코드 조회 함수
 const getById = async (table, id) => {

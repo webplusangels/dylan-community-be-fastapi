@@ -1,9 +1,8 @@
 /* eslint-disable camelcase */
 const postModel = require('../models/postModel');
-const { ERROR_MESSAGES } = require('../config/constants');
 
 // id로 단일 포스트 조회
-const getPostById = async (req, res) => {
+const getPostById = async (req, res, next) => {
     const { id } = req.params;
 
     try {
@@ -20,14 +19,12 @@ const getPostById = async (req, res) => {
         res.status(200).json(post);
     } catch (err) {
         console.error('포스트 조회 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 페이지네이션된 포스트 목록 조회
-const getPaginatedPosts = async (req, res) => {
+const getPaginatedPosts = async (req, res, next) => {
     let { lastCreatedAt, limit } = req.query;
 
     // 쿼리스트링 유효성 검사
@@ -42,14 +39,12 @@ const getPaginatedPosts = async (req, res) => {
         res.status(200).json(posts);
     } catch (err) {
         console.error('포스트 목록 조회 오류:', err);
-        res.status(500).json({
-            message: 'Failed to fetch posts',
-        });
+        next(err);
     }
 };
 
 // 포스트 생성
-const createPost = async (req, res) => {
+const createPost = async (req, res, next) => {
     const { title, content } = req.body;
     const userId = req.session.user.user_id;
 
@@ -74,14 +69,12 @@ const createPost = async (req, res) => {
         res.status(201).json({ message: '포스트 작성 완료', post_id: postId });
     } catch (err) {
         console.error('포스트 생성 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 포스트 수정
-const updatePostById = async (req, res) => {
+const updatePostById = async (req, res, next) => {
     const { id } = req.params;
     const { title, content } = req.body;
 
@@ -123,14 +116,12 @@ const updatePostById = async (req, res) => {
         res.status(200).json({ message: '포스트 수정 완료' });
     } catch (err) {
         console.error('포스트 수정 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 포스트 삭제
-const deletePostById = async (req, res) => {
+const deletePostById = async (req, res, next) => {
     const { id } = req.params;
 
     // 로그인 상태 확인
@@ -162,14 +153,12 @@ const deletePostById = async (req, res) => {
         res.status(200).json({ message: '포스트 삭제 완료' });
     } catch (err) {
         console.error('포스트 삭제 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 
 // 포스트 메타 정보 조회
-const getPostMetaById = async (req, res) => {
+const getPostMetaById = async (req, res, next) => {
     const { id } = req.params;
 
     try {
@@ -183,9 +172,7 @@ const getPostMetaById = async (req, res) => {
         res.status(200).json(post);
     } catch (err) {
         console.error('포스트 메타 정보 조회 오류:', err);
-        res.status(500).json({
-            message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-        });
+        next(err);
     }
 };
 

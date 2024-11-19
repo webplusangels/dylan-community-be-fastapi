@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const { v4: uuidv4 } = require('uuid');
-const { getById, createRecord, formatDate } = require('../config/utils');
-const { query } = require('../db/db');
+const { getById, createRecord, formatDate } = require('../utils/utils');
+const { query } = require('../utils/dbUtils');
 
 // 포스트 생성 함수
 const createPost = async (post, userId) => {
@@ -54,7 +54,7 @@ const updatePostById = async (post, postId) => {
             postId,
         ]);
     } catch (error) {
-        console.error('포스트 수정 오류:', error);
+        console.error('포스트 수정 오류:', error.message);
         throw error;
     }
 };
@@ -68,7 +68,7 @@ const deletePostById = async (id) => {
         `;
         await query(sql, [id]);
     } catch (error) {
-        console.error('포스트 삭제 오류:', error);
+        console.error('포스트 삭제 오류:', error.message);
         throw error;
     }
 };
@@ -84,7 +84,7 @@ const getPostMetaById = async (id) => {
         const meta = await query(sql, [id]);
         return meta[0];
     } catch (error) {
-        console.error('포스트 메타 정보 조회 오류:', error);
+        console.error('포스트 메타 정보 조회 오류:', error.message);
         throw error;
     }
 };
@@ -101,7 +101,7 @@ const updatePostViewById = async (id, views) => {
         await query(sql, [views || existingPost.views, id]);
         return { ...existingPost, views };
     } catch (error) {
-        console.error('포스트 조회수 정보 업데이트 오류:', error);
+        console.error('포스트 조회수 정보 업데이트 오류:', error.message);
         throw error;
     }
 };
@@ -118,7 +118,7 @@ const updatePostLikesById = async (id, likes) => {
         await query(sql, [likes || existingPost.likes, id]);
         return { ...existingPost, likes };
     } catch (error) {
-        console.error('포스트 좋아요 수 정보 업데이트 오류:', error);
+        console.error('포스트 좋아요 수 정보 업데이트 오류:', error.message);
         throw error;
     }
 };
