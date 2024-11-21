@@ -3,6 +3,11 @@ const { v4: uuidv4 } = require('uuid');
 const { getById, createRecord, formatDate } = require('../utils/utils');
 const { query } = require('../utils/dbUtils');
 
+// ID로 포스트 조회 함수
+const getPostById = async (id) => {
+    return getById('posts', id);
+};
+
 // 포스트 생성 함수
 const createPost = async (post, userId) => {
     const data = {
@@ -124,6 +129,7 @@ const updatePostLikesById = async (id, likes) => {
 };
 
 module.exports = {
+    getPostById,
     createPost,
     getPaginatedPosts,
     updatePostById,
