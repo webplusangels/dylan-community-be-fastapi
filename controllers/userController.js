@@ -13,6 +13,20 @@ const getUsers = async (req, res, next) => {
     }
 };
 
+// 세션 확인
+const getSession = (req, res, next) => {
+    try {
+        if (!req.session.user) {
+            res.json({ isAuthenticated: false });
+            return;
+        }
+        res.json({ isAuthenticated: true });
+    } catch (err) {
+        console.error('세션 확인 오류:', err);
+        next(err);
+    }
+};
+
 // 사용자 인증
 const authenticateUser = async (email, password) => {
     try {
@@ -245,6 +259,7 @@ const resetPassword = async (req, res, next) => {
 
 module.exports = {
     getUsers,
+    getSession,
     getProfile,
     updateProfile,
     addUser,
