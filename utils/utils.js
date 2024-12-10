@@ -1,12 +1,12 @@
 const { query } = require('./dbUtils');
 
 // ID로 단일 레코드 조회 함수
-const getById = async (table, id) => {
+const getById = async (table, id, idField = 'id') => {
     try {
         const sql = `
             SELECT *
             FROM ${table}
-            WHERE id = ?`;
+            WHERE ${idField} = ?`;
         const rows = await query(sql, [id]);
         if (!rows.length) {
             throw new Error(`${table}를 찾을 수 없습니다.`);

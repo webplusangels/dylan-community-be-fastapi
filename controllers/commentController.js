@@ -1,4 +1,5 @@
 const commentModel = require('../models/commentModel');
+const { getById } = require('../utils/utils');
 
 // 댓글 id로 단일 댓글 조회
 const getCommentById = async (req, res, next) => {
@@ -81,11 +82,12 @@ const updateComment = async (req, res, next) => {
     const userId = req.session.user.user_id;
 
     try {
-        const updatedComment = await commentModel.updateCommentById(
-            content,
-            commentId
+        const existingComment = await getById(
+            'comments',
+            commentId,
+            'comment_id'
         );
-        if (!updatedComment) {
+        if (!existingComment) {
             res.status(404).json({
                 message: '댓글을 찾을 수 없습니다.',
             });
@@ -93,12 +95,17 @@ const updateComment = async (req, res, next) => {
         }
 
         // 댓글 작성자 검증
-        if (updatedComment.user_id !== userId) {
+        if (existingComment.user_id !== userId) {
             res.status(403).json({
                 message: '권한이 없습니다.',
             });
             return;
         }
+
+        const updatedComment = await commentModel.updateCommentById(
+            content,
+            commentId
+        );
         res.status(200).json(updatedComment);
     } catch (err) {
         console.error('댓글 수정 오류:', err);
@@ -119,8 +126,8 @@ const getPaginatedComments = async (req, res, next) => {
         // 데이터베이스에서 데이터 가져오기
         const comments = await commentModel.getPaginatedComments(
             postId,
-            lastCreatedAt,
-            limit
+            limit,
+            lastCreatedAt
         );
 
         // 결과 반환
@@ -160,7 +167,6 @@ const deleteComment = async (req, res, next) => {
             });
             return;
         }
-
         // 댓글 업데이트
         await commentModel.updateCommentsCountById(comment.post_id);
         await commentModel.deleteCommentById(commentId);

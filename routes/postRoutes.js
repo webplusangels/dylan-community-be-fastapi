@@ -34,4 +34,13 @@ router.put('/:postId/comments/:commentId', commentController.updateComment);
 // 댓글 삭제 라우트
 router.delete('/:postId/comments/:commentId', commentController.deleteComment);
 
+// 게시글 좋아요 토글
+router.post('/:postId/like', postController.toggleLike);
+
+// 게시글 좋아요 조회
+router.get('/:postId/like-status', postController.getLikeStatus);
+
+// 게시글 댓글 수 조회
+router.get('/:postId/comment-count', postController.getCommentCount);
+
 module.exports = router;

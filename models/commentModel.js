@@ -5,7 +5,7 @@ const { query } = require('../utils/dbUtils');
 
 // 댓글 ID로 단일 댓글 조회 함수
 const getCommentById = async (id) => {
-    return getById('comments', id);
+    return getById('comments', id, 'comment_id');
 };
 
 // 댓글 생성 함수
@@ -24,17 +24,18 @@ const createComment = async (comment, postId, userId) => {
 // 댓글 수정 함수
 const updateCommentById = async (content, id) => {
     try {
-        const existingComment = await getById('comments', id);
+        const existingComment = await getById('comments', id, 'comment_id');
         const sql = `
             UPDATE comments
             SET content = ?, updated_at = ?
-            WHERE id = ?
+            WHERE comment_id = ?
         `;
         await query(sql, [
             content || existingComment.content,
             formatDate(new Date()),
             id,
         ]);
+        return { ...existingComment, content };
     } catch (error) {
         console.error('댓글 수정 오류:', error.message);
         throw error;
@@ -42,17 +43,31 @@ const updateCommentById = async (content, id) => {
 };
 
 // 페이지네이션된 댓글 목록 조회 함수
-const getPaginatedComments = async (postId, lastCreatedAt, limit) => {
+const getPaginatedComments = async (
+    postId,
+    limit = 10,
+    lastCreatedAt = new Date()
+) => {
     try {
         const sql = `
-            SELECT comment_id, post_id, user_id, content, created_at, updated_at
+            SELECT 
+                comments.comment_id, 
+                comments.post_id, 
+                comments.user_id, 
+                comments.content, 
+                comments.created_at, 
+                comments.updated_at,
+                users.nickname AS author,
+                users.profile_image_path AS profile_image
             FROM comments
-            WHERE post_id = ? AND created_at > ?
-            ORDER BY created_at ASC
+            JOIN users ON comments.user_id = users.user_id
+            WHERE comments.post_id = ? AND (comments.created_at < ? OR ? IS NULL)
+            ORDER BY created_at DESC
             LIMIT ?`;
         const rows = await query(sql, [
             postId,
             formatDate(lastCreatedAt),
+            lastCreatedAt || null,
             limit,
         ]);
         return rows;
@@ -67,7 +82,7 @@ const deleteCommentById = async (id) => {
     try {
         const sql = `
             DELETE FROM comments
-            WHERE id = ?
+            WHERE comment_id = ?
         `;
         await query(sql, [id]);
     } catch (error) {
@@ -90,10 +105,10 @@ const updateCommentsCountById = async (postId) => {
         const updateSql = `
             UPDATE posts
             SET comments_count = ?
-            WHERE id = ?
+            WHERE post_id = ?
         `;
         await query(updateSql, [comments_count, postId]);
-        const existingPost = await getById('posts', postId);
+        const existingPost = await getById('posts', postId, 'post_id');
         return { ...existingPost, comments_count };
     } catch (error) {
         console.error('포스트 댓글 수 정보 업데이트 오류:', error.message);
