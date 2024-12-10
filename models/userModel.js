@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const { createRecord, formatDate } = require('../utils/utils');
+const { getById, createRecord, formatDate } = require('../utils/utils');
 const { query } = require('../utils/dbUtils');
 
 // 필수 데이터 중복 확인 함수
@@ -12,7 +12,7 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
         const emailSql = `
             SELECT COUNT(*) AS count
             FROM users
-            WHERE email = ? AND id != ?
+            WHERE email = ? AND user_id != ?
         `;
         const emailResult = await query(emailSql, [email, targetId || 0]);
         emailExists = emailResult[0].count > 0;
@@ -22,7 +22,7 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
     const nicknameSql = `
         SELECT COUNT(*) AS count
         FROM users
-        WHERE nickname = ? AND id != ?
+        WHERE nickname = ? AND user_id != ?
     `;
     const nicknameResult = await query(nicknameSql, [nickname, targetId || 0]);
     nicknameExists = nicknameResult[0].count > 0;
@@ -37,7 +37,7 @@ const addUser = async (user) => {
         email: user.email,
         nickname: user.nickname,
         password: user.password,
-        profile_image_path: user.profile_image_path || null,
+        profile_image_path: user.profileImagePath || null,
         created_at: formatDate(new Date()),
         updated_at: formatDate(new Date()),
     };
@@ -97,14 +97,16 @@ const updateUserProfile = async (id, updatedData) => {
         const sql = `
             UPDATE users
             SET nickname = ?, profile_image_path = ?, updated_at = ?
-            WHERE id = ?
+            WHERE user_id = ?
         `;
         await query(sql, [
             updatedData.nickname,
             updatedData.profileImagePath,
-            new Date().toISOString(),
+            formatDate(new Date()),
             id,
         ]);
+
+        return getById('users', id, 'user_id');
     } catch (error) {
         console.error('프로필 업데이트 오류:', error.message);
         throw error;
@@ -117,7 +119,7 @@ const deleteUserById = async (id) => {
         console.log('id:', id);
         const sql = `
             DELETE FROM users
-            WHERE id = ?
+            WHERE user_id = ?
         `;
         await query(sql, [id]);
     } catch (error) {

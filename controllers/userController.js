@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const userModel = require('../models/userModel');
+const { getUploadedFileUrl } = require('../utils/uploadUtils');
 const { ERROR_MESSAGES } = require('../config/constants');
 
 // 사용자 목록 조회
@@ -14,16 +15,22 @@ const getUsers = async (req, res, next) => {
 };
 
 // 세션 확인
-const getSession = (req, res, next) => {
+const getSession = (req, res) => {
     try {
-        if (!req.session.user) {
-            res.json({ isAuthenticated: false });
+        // 세션 유효성 확인
+        if (!req.session || !req.session.user) {
+            res.status(401).json({
+                message: '세션이 만료되었거나 로그인이 필요합니다.',
+            });
             return;
         }
-        res.json({ isAuthenticated: true });
-    } catch (err) {
-        console.error('세션 확인 오류:', err);
-        next(err);
+
+        // 세션 정보 반환
+        const { user } = req.session;
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('세션 정보 조회 오류:', error.message);
+        res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 };
 
@@ -72,6 +79,7 @@ const addUser = async (req, res, next) => {
             user_id: newUser.user_id,
             email: newUser.email,
             nickname: newUser.nickname,
+            profile_image_path: newUser.profile_image_path,
         };
 
         res.status(201).json({ message: '사용자 등록 성공' });
@@ -83,14 +91,23 @@ const addUser = async (req, res, next) => {
 
 const getProfile = async (req, res, next) => {
     const { user } = req.session;
-
+    console.log('user:', user);
     if (!user) {
         res.status(401).json({ message: '로그인이 필요합니다.' });
         return;
     }
 
     try {
+        req.session.touch(); // 세션 만료 시간 갱신
+
         const userProfile = await userModel.getUserByEmail(user.email);
+        if (!userProfile) {
+            res.status(404).json({
+                message: '사용자 프로필을 찾을 수 없습니다.',
+            });
+            return;
+        }
+
         res.status(200).json(userProfile);
     } catch (err) {
         console.error('프로필 조회 오류:', err);
@@ -113,16 +130,17 @@ const updateProfile = async (req, res, next) => {
     }
 
     try {
-        const updatedUser = await userModel.updateUserProfile(user.id, {
+        const updatedUser = await userModel.updateUserProfile(user.user_id, {
             nickname,
             profileImagePath,
         });
 
         // 세션 사용자 정보 업데이트
         req.session.user = {
-            id: updatedUser.id,
+            user_id: updatedUser.user_id,
             email: updatedUser.email,
             nickname: updatedUser.nickname,
+            profile_image_path: updatedUser.profile_image_path,
         };
 
         // 변경된 세션 저장 후 응답
@@ -194,9 +212,13 @@ const loginUser = async (req, res, next) => {
             user_id: user.user_id,
             email: user.email,
             nickname: user.nickname,
+            profile_image_path: user.profile_image_path,
         };
 
-        res.status(200).json({ message: '로그인 성공' });
+        res.status(200).json({
+            message: '로그인 성공',
+            user: req.session.user,
+        });
     } catch (err) {
         console.error('로그인 오류:', err);
         next(err);
@@ -237,6 +259,15 @@ const resetPassword = async (req, res, next) => {
         return;
     }
 
+    const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
+    if (!passwordRegex.test(password)) {
+        res.status(400).json({
+            message: '비밀번호 형식이 올바르지 않습니다.',
+        });
+        return;
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         await userModel.updateUserPassword(user.email, hashedPassword);
@@ -257,6 +288,17 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
+// 프로필 이미지 업로드
+const uploadProfileImage = async (req, res, next) => {
+    try {
+        const fileUrl = getUploadedFileUrl(req.file);
+        res.status(200).json({ url: fileUrl });
+    } catch (err) {
+        console.error('이미지 업로드 오류:', err);
+        next(err);
+    }
+};
+
 module.exports = {
     getUsers,
     getSession,
@@ -267,4 +309,5 @@ module.exports = {
     logoutUser,
     deleteProfile,
     resetPassword,
+    uploadProfileImage,
 };

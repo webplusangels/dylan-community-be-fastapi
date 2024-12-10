@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 const postModel = require('../models/postModel');
+const { getUploadedFileUrl } = require('../utils/uploadUtils');
 
 // id로 단일 포스트 조회
 const getPostById = async (req, res, next) => {
@@ -45,7 +46,7 @@ const getPaginatedPosts = async (req, res, next) => {
 
 // 포스트 생성
 const createPost = async (req, res, next) => {
-    const { title, content } = req.body;
+    const { title, content, image_path } = req.body;
     const userId = req.session.user.user_id;
 
     // 필수 필드 검증
@@ -65,7 +66,10 @@ const createPost = async (req, res, next) => {
     }
 
     try {
-        const postId = await postModel.createPost({ title, content }, userId);
+        const postId = await postModel.createPost(
+            { title, content, image_path },
+            userId
+        );
         res.status(201).json({ message: '포스트 작성 완료', post_id: postId });
     } catch (err) {
         console.error('포스트 생성 오류:', err);
@@ -176,6 +180,61 @@ const getPostMetaById = async (req, res, next) => {
     }
 };
 
+// 포스트 이미지 업로드
+const uploadPostImages = (req, res, next) => {
+    try {
+        const fileUrl = getUploadedFileUrl(req.file);
+        res.status(200).json({ url: fileUrl });
+    } catch (err) {
+        console.error('Post 이미지 업로드 오류:', err);
+        next(err);
+    }
+};
+
+// 좋아요 토글
+const toggleLike = async (req, res, next) => {
+    const { postId } = req.params;
+    const userId = req.session.user.user_id;
+
+    try {
+        const { isLike, updatedLikes } = await postModel.toggleLike(
+            postId,
+            userId
+        );
+        res.status(200).json({ isLike, likes: updatedLikes });
+    } catch (err) {
+        console.error('포스트 좋아요 토글 오류:', err);
+        next(err);
+    }
+};
+
+// 좋아요 상태 조회
+const getLikeStatus = async (req, res, next) => {
+    const { postId } = req.params;
+    const userId = req.session.user.user_id;
+
+    try {
+        const isLike = await postModel.getLikeStatus(postId, userId);
+        res.status(200).json({ isLike });
+    } catch (err) {
+        console.error('포스트 좋아요 상태 조회 오류:', err);
+        next(err);
+    }
+};
+
+// 댓글 수 업데이트
+const getCommentCount = async (req, res, next) => {
+    const { postId } = req.params;
+
+    try {
+        const count = await postModel.updatePostCommentsCountById(postId);
+        res.status(200).json({ count });
+    } catch (err) {
+        console.error('포스트 댓글 수 조회 오류:', err);
+        next(err);
+    }
+};
+
 module.exports = {
     getPostById,
     getPaginatedPosts,
@@ -183,4 +242,8 @@ module.exports = {
     updatePostById,
     deletePostById,
     getPostMetaById,
+    uploadPostImages,
+    toggleLike,
+    getLikeStatus,
+    getCommentCount,
 };

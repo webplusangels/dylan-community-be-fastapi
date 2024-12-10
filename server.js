@@ -8,6 +8,7 @@ const authRouter = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 dotenv.config();
 
@@ -26,8 +27,9 @@ app.use(
     /* 세션 설정 */
     session({
         secret: process.env.COOKIE_SECRET,
-        resave: false,
+        resave: true,
         saveUninitialized: true,
+        rolling: true, // 세션 요청 시 쿠키 유효시간 초기화
         cookie: {
             httpOnly: true,
             secure: false,
@@ -48,6 +50,7 @@ apiRouter.use('/auth', authRouter); // 인증 관련 API
 apiRouter.use('/users', userRoutes); // 사용자 관련 API
 apiRouter.use('/posts', postRoutes); // 게시물 관련 API
 apiRouter.use('/comments', commentRoutes); // 댓글 관련 API
+apiRouter.use('/upload', uploadRoutes); // 업로드 관련 API
 
 // 메인 라우터
 app.use('/api/v1', apiRouter);

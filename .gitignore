@@ -39,3 +39,6 @@ constants.js
 
 # Temporal data
 data/
+
+# User uploaded files
+uploads/
