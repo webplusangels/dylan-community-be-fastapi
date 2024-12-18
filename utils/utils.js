@@ -2,6 +2,13 @@ const { query } = require('./dbUtils');
 
 // ID로 단일 레코드 조회 함수
 const getById = async (table, id, idField = 'id') => {
+    if (!table || typeof table !== 'string') {
+        throw new Error('유효한 테이블 이름이 필요합니다.');
+    }
+    if (!id) {
+        throw new Error('유효한 ID가 필요합니다.');
+    }
+
     try {
         const sql = `
             SELECT *
@@ -20,6 +27,13 @@ const getById = async (table, id, idField = 'id') => {
 
 // 레코드 생성 함수
 const createRecord = async (table, data) => {
+    if (!table || typeof table !== 'string') {
+        throw new Error('유효한 테이블 이름이 필요합니다.');
+    }
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+        throw new Error('유효한 데이터가 필요합니다.');
+    }
+
     try {
         const columns = Object.keys(data).join(', ');
         const placeholders = Object.keys(data)
@@ -42,8 +56,19 @@ const formatDate = (date) => {
     return date.toISOString().slice(0, 19).replace('T', ' ');
 };
 
+// 세션 사용자 설정 함수
+const setSessionUser = (req, user) => {
+    req.session.user = {
+        user_id: user.user_id,
+        email: user.email,
+        nickname: user.nickname,
+        profile_image_path: user.profile_image_path,
+    };
+};
+
 module.exports = {
     getById,
     createRecord,
     formatDate,
+    setSessionUser,
 };

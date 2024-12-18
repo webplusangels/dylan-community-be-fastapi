@@ -1,7 +1,9 @@
 const bcrypt = require('bcrypt');
 const userModel = require('../models/userModel');
+const { setSessionUser } = require('../utils/utils');
 const { getUploadedFileUrl } = require('../utils/uploadUtils');
 const { ERROR_MESSAGES } = require('../config/constants');
+const { UnauthorizedError } = require('../utils/customError');
 
 // 사용자 목록 조회
 const getUsers = async (req, res, next) => {
@@ -75,12 +77,7 @@ const addUser = async (req, res, next) => {
 
         const newUser = await userModel.addUser(user);
 
-        req.session.user = {
-            user_id: newUser.user_id,
-            email: newUser.email,
-            nickname: newUser.nickname,
-            profile_image_path: newUser.profile_image_path,
-        };
+        setSessionUser(req, newUser);
 
         res.status(201).json({ message: '사용자 등록 성공' });
     } catch (err) {
@@ -136,12 +133,7 @@ const updateProfile = async (req, res, next) => {
         });
 
         // 세션 사용자 정보 업데이트
-        req.session.user = {
-            user_id: updatedUser.user_id,
-            email: updatedUser.email,
-            nickname: updatedUser.nickname,
-            profile_image_path: updatedUser.profile_image_path,
-        };
+        setSessionUser(req, updatedUser);
 
         // 변경된 세션 저장 후 응답
         req.session.save((err) => {
@@ -201,19 +193,11 @@ const loginUser = async (req, res, next) => {
     try {
         const user = await authenticateUser(email, password);
         if (!user) {
-            res.status(401).json({
-                meesage: ERROR_MESSAGES.INVALID_CREDENTIALS,
-            });
-            return;
+            throw new UnauthorizedError('로그인 실패');
         }
 
         // 세션 사용자 설정
-        req.session.user = {
-            user_id: user.user_id,
-            email: user.email,
-            nickname: user.nickname,
-            profile_image_path: user.profile_image_path,
-        };
+        setSessionUser(req, user);
 
         res.status(200).json({
             message: '로그인 성공',

@@ -32,6 +32,17 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
 
 // 사용자 데이터를 추가하는 함수
 const addUser = async (user) => {
+    // 이메일, 닉네임 중복 확인
+    const { emailExists, nicknameExists } = await isDuplicateUser(
+        user.email,
+        user.nickname
+    );
+    if (emailExists) {
+        throw new Error('이미 사용 중인 이메일입니다.');
+    }
+    if (nicknameExists) {
+        throw new Error('이미 사용 중인 닉네임입니다.');
+    }
     const data = {
         user_id: uuidv4(),
         email: user.email,
