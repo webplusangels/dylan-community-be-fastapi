@@ -4,7 +4,7 @@ const userController = require('../controllers/userController');
 const router = express.Router();
 
 // 사용자 목록 조회 라우트
-router.get('/', userController.getUsers);
+// router.get('/', userController.getUsers);
 
 // 패스워드 재설정 라우트
 router.put('/password', userController.resetPassword);
