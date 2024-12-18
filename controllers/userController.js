@@ -5,17 +5,6 @@ const { getUploadedFileUrl } = require('../utils/uploadUtils');
 const { ERROR_MESSAGES } = require('../config/constants');
 const { UnauthorizedError } = require('../utils/customError');
 
-// 사용자 목록 조회
-const getUsers = async (req, res, next) => {
-    try {
-        const users = await userModel.getUsers();
-        res.status(200).json(users);
-    } catch (err) {
-        console.error('사용자 목록 조회 오류:', err);
-        next(err);
-    }
-};
-
 // 세션 확인
 const getSession = (req, res) => {
     try {
@@ -284,7 +273,6 @@ const uploadProfileImage = async (req, res, next) => {
 };
 
 module.exports = {
-    getUsers,
     getSession,
     getProfile,
     updateProfile,
