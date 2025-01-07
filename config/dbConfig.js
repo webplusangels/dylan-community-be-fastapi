@@ -1,5 +1,11 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+const APP_ENV = process.env.APP_ENV || 'development';
+
+if (APP_ENV === 'development') {
+    dotenv.config();
+}
 
 // 환경 변수가 설정되었는지 확인
 if (
