@@ -1,0 +1,49 @@
+name: Deploy to EC2
+
+# 워크플로우 실행 조건 설정
+on:
+    push:
+        branches:
+            - dev # dev 브랜치에 push될 때 실행
+
+jobs:
+    deploy:
+        runs-on: ubuntu-24.04 # 가상 환경 지정 (Ubuntu 24.04 버전)
+
+        steps:
+            # 1. 코드 체크아웃
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            # 2. Node.js 세팅
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '18'
+
+            # 3. SSH 키 설정
+            - name: Set up SSH
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 --decode > ~/.ssh/id_rsa
+                  chmod 600 ~/.ssh/id_rsa
+                  ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
+            # 4. EC2 접속 및 코드 배포
+            - name: Deploy to EC2
+              run: |
+                  ssh ${{ secrets.USER }}@${{ secrets.HOST }} << 'EOF'
+                    cd /app
+
+                    # 코드 업데이트 및 빌드
+                    git pull origin dev
+                    npm install
+                    npm run init 
+                    npm run build
+
+                    # 환경 변수 적용
+                    echo "${{ secrets.ENV_FILE }}" | base64 --decode > .env
+
+                    # PM2 재시작
+                    pm2 restart ecosystem.config.js
+                  EOF
