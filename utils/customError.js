@@ -12,6 +12,7 @@ class CustomError extends Error {
 class BadRequestError extends CustomError {
     constructor(message = 'Bad Request', data = null) {
         super(message, 400, data);
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 
@@ -25,12 +26,14 @@ class UnauthorizedError extends CustomError {
 class ForbiddenError extends CustomError {
     constructor(message = 'Forbidden') {
         super(message, 403);
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 
 class NotFoundError extends CustomError {
     constructor(message = 'Not Found') {
         super(message, 404);
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 
@@ -38,12 +41,14 @@ class NotFoundError extends CustomError {
 class InternalServerError extends CustomError {
     constructor(message = 'Internal Server Error') {
         super(message, 500);
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 
 class ServiceUnavailableError extends CustomError {
     constructor(message = 'Service Unavailable') {
         super(message, 503);
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

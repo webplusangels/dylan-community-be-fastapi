@@ -2,7 +2,6 @@ const express = require('express');
 const dotenv = require('dotenv');
 const session = require('express-session');
 const cors = require('cors');
-const { DEFAULTS } = require('./config/constants');
 const errorHandler = require('./middlewares/errorHandler');
 const authRouter = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -33,7 +32,7 @@ app.use(
         cookie: {
             httpOnly: true,
             secure: false,
-            maxAge: DEFAULTS.SESSION_TIMEOUT,
+            maxAge: process.env.SESSION_TIMEOUT,
         },
     })
 );

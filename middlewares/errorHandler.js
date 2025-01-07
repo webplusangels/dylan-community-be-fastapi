@@ -1,4 +1,5 @@
 const { ERROR_MESSAGES } = require('../config/constants');
+const { CustomError } = require('../utils/customError');
 
 // 에러 처리 미들웨어
 const errorHandler = (err, req, res, next) => {
@@ -13,6 +14,13 @@ const errorHandler = (err, req, res, next) => {
         return;
     }
 
+    if (err instanceof CustomError) {
+        res.status(err.status).json({
+            message: err.message,
+            data: err.data,
+        });
+        return;
+    }
     res.status(err.status || 500).json({
         message: err.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack }), // 개발 환경에서는 스택 트레이스도 응답에 포함
