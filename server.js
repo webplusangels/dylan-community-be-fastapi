@@ -9,10 +9,22 @@ const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 
-dotenv.config();
+const APP_ENV = process.env.APP_ENV || 'development';
+
+if (APP_ENV === 'development') {
+    dotenv.config(); // 로컬에서는 .env 파일 사용
+}
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+if (
+    !process.env.COOKIE_SECRET ||
+    !process.env.DB_HOST ||
+    !process.env.DB_USER
+) {
+    console.error('환경 변수 설정이 올바르지 않습니다. 서버를 종료합니다.');
+    process.exit(1);
+}
 
 // 미들웨어 설정
 app.use(express.json());
