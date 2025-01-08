@@ -43,15 +43,13 @@ const createComment = async (req, res, next) => {
     const userId = req.session.user.user_id;
 
     try {
-        const commentId = await commentModel.createComment(
-            { content },
-            postId,
-            userId
-        );
+        await commentModel.createComment({ content }, postId, userId);
         // 댓글 수 업데이트
         await commentModel.updateCommentsCountById(postId);
+        const comments = await commentModel.getCommentsByPostId(postId);
         res.status(201).json({
-            comment_id: commentId,
+            message: '댓글 생성 완료',
+            comments,
         });
     } catch (err) {
         console.error('댓글 생성 오류:', err);
