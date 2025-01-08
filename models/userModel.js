@@ -128,11 +128,31 @@ const updateUserProfile = async (id, updatedData) => {
 const deleteUserById = async (id) => {
     try {
         console.log('id:', id);
-        const sql = `
+        // likes 테이블에서 삭제
+        const deleteLikesSql = `
+            DELETE FROM likes
+            WHERE user_id = ?
+        `;
+        await query(deleteLikesSql, [id]);
+        // comments 테이블에서 삭제
+        const deleteCommentsSql = `
+                DELETE FROM comments
+                WHERE user_id = ?
+            `;
+        await query(deleteCommentsSql, [id]);
+
+        // posts 테이블에서 삭제
+        const deletePostsSql = `
+                DELETE FROM posts
+                WHERE user_id = ?
+            `;
+        await query(deletePostsSql, [id]);
+        // users 테이블에서 삭제
+        const deleteUsersSql = `
             DELETE FROM users
             WHERE user_id = ?
         `;
-        await query(sql, [id]);
+        await query(deleteUsersSql, [id]);
     } catch (error) {
         console.error('사용자 삭제 오류:', error.message);
         throw error;
