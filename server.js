@@ -44,7 +44,7 @@ app.use(
         cookie: {
             httpOnly: true,
             secure: false,
-            maxAge: process.env.SESSION_TIMEOUT,
+            maxAge: Number(process.env.SESSION_TIMEOUT) || 86400000,
         },
     })
 );
