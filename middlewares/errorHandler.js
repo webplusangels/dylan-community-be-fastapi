@@ -10,18 +10,16 @@ const errorHandler = (err, req, res, next) => {
     }
 
     if (res.headersSent) {
-        next(err);
-        return;
+        return next(err);
     }
 
     if (err instanceof CustomError) {
-        res.status(err.status).json({
+        return res.status(err.status).json({
             message: err.message,
             data: err.data,
         });
-        return;
     }
-    res.status(err.status || 500).json({
+    return res.status(err.status || 500).json({
         message: err.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack }), // 개발 환경에서는 스택 트레이스도 응답에 포함
     });

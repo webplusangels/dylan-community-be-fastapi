@@ -3,7 +3,7 @@ const { getById, createRecord, formatDate } = require('../utils/utils');
 const { query } = require('../utils/dbUtils');
 
 // 필수 데이터 중복 확인 함수
-const isDuplicateUser = async (email, nickname, targetId = null) => {
+const isDuplicateUser = async (email, nickname) => {
     let emailExists = false;
     let nicknameExists = false;
 
@@ -12,9 +12,9 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
         const emailSql = `
             SELECT COUNT(*) AS count
             FROM users
-            WHERE email = ? AND user_id != ?
+            WHERE email = ?
         `;
-        const emailResult = await query(emailSql, [email, targetId || 0]);
+        const emailResult = await query(emailSql, email);
         emailExists = emailResult[0].count > 0;
     }
 
@@ -22,9 +22,9 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
     const nicknameSql = `
         SELECT COUNT(*) AS count
         FROM users
-        WHERE nickname = ? AND user_id != ?
+        WHERE nickname = ?
     `;
-    const nicknameResult = await query(nicknameSql, [nickname, targetId || 0]);
+    const nicknameResult = await query(nicknameSql, nickname);
     nicknameExists = nicknameResult[0].count > 0;
 
     return { emailExists, nicknameExists };
