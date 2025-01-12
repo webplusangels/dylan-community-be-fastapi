@@ -80,7 +80,7 @@ const createPost = async (req, res, next) => {
 // 포스트 수정
 const updatePostById = async (req, res, next) => {
     const { id } = req.params;
-    const { title, content } = req.body;
+    const { title, content, image_path } = req.body;
 
     // 필수 필드 검증
     if (!title || !content) {
@@ -116,7 +116,7 @@ const updatePostById = async (req, res, next) => {
             return;
         }
 
-        await postModel.updatePostById({ title, content }, id);
+        await postModel.updatePostById({ title, content, image_path }, id);
         res.status(200).json({ message: '포스트 수정 완료' });
     } catch (err) {
         console.error('포스트 수정 오류:', err);
