@@ -40,4 +40,6 @@ build/
 data/
 
 # User uploaded files
-uploads/
+uploads/*
+!uploads/.gitkeep
+!uploads/default_profile.jpeg
