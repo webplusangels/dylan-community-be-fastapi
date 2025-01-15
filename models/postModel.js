@@ -13,7 +13,27 @@ const getPostById = async (id) => {
             WHERE posts.post_id = ?
         `;
         const rows = await query(sql, [id]);
-        if (!rows.length) {
+        if (rows.length !== 1) {
+            throw new Error('포스트를 찾을 수 없습니다.');
+        }
+
+        return rows[0];
+    } catch (error) {
+        console.error('포스트 데이터 조회 오류:', error.message);
+        throw error;
+    }
+};
+
+// id로 포스트 id 조회
+const getPostIdById = async (id) => {
+    try {
+        const sql = `
+            SELECT post_id
+            FROM posts
+            WHERE id = ?
+        `;
+        const rows = await query(sql, [id]);
+        if (rows.length !== 1) {
             throw new Error('포스트를 찾을 수 없습니다.');
         }
         return rows[0];
@@ -25,6 +45,9 @@ const getPostById = async (id) => {
 
 // 포스트 생성 함수
 const createPost = async (post, userId) => {
+    const now = new Date();
+    const formattedDate = formatDate(now);
+
     const data = {
         post_id: uuidv4(),
         user_id: userId,
@@ -34,8 +57,8 @@ const createPost = async (post, userId) => {
         views: post.views || 0,
         likes: post.likes || 0,
         comments_count: post.comments_count || 0,
-        created_at: formatDate(new Date()),
-        updated_at: formatDate(new Date()),
+        created_at: formattedDate,
+        updated_at: formattedDate,
     };
     return createRecord('posts', data);
 };
@@ -86,6 +109,7 @@ const updatePostById = async (post, postId) => {
             formatDate(new Date()),
             postId,
         ]);
+        return postId;
     } catch (error) {
         console.error('포스트 수정 오류:', error.message);
         throw error;
@@ -95,11 +119,23 @@ const updatePostById = async (post, postId) => {
 // ID로 포스트 삭제 함수
 const deletePostById = async (id) => {
     try {
-        const sql = `
+        // likes 테이블에서 삭제
+        const deleteLikesSql = `
+            DELETE FROM likes
+            WHERE post_id = ?
+        `;
+        await query(deleteLikesSql, [id]);
+        // comments 테이블에서 삭제
+        const deleteCommentsSql = `
+            DELETE FROM comments
+            WHERE post_id = ?
+        `;
+        await query(deleteCommentsSql, [id]);
+        const deletePostssql = `
             DELETE FROM posts
             WHERE post_id = ?
         `;
-        await query(sql, [id]);
+        await query(deletePostssql, [id]);
     } catch (error) {
         console.error('포스트 삭제 오류:', error.message);
         throw error;
@@ -123,16 +159,21 @@ const getPostMetaById = async (id) => {
 };
 
 // 포스트 조회수 정보 업데이트 함수
-const updatePostViewById = async (id, views) => {
+const updatePostViewById = async (id) => {
     try {
         const existingPost = await getById('posts', id, 'post_id');
+        if (!existingPost) {
+            throw new Error('포스트를 찾을 수 없습니다.');
+        }
+
+        const newViews = existingPost.views + 1;
         const sql = `
             UPDATE posts
             SET views = ?
             WHERE post_id = ?
         `;
-        await query(sql, [views || existingPost.views, id]);
-        return { ...existingPost, views };
+        await query(sql, [newViews, id]);
+        return { ...existingPost, views: newViews };
     } catch (error) {
         console.error('포스트 조회수 정보 업데이트 오류:', error.message);
         throw error;
@@ -245,6 +286,7 @@ const getLikeStatus = async (postId, userId) => {
 
 module.exports = {
     getPostById,
+    getPostIdById,
     createPost,
     getPaginatedPosts,
     updatePostById,

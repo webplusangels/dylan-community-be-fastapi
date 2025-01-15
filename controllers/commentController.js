@@ -99,11 +99,18 @@ const updateComment = async (req, res, next) => {
             });
             return;
         }
-
         const updatedComment = await commentModel.updateCommentById(
             content,
             commentId
         );
+        const comments = await commentModel.getCommentsByPostId(
+            updatedComment.post_id
+        );
+        res.status(201).json({
+            message: '댓글 생성 완료',
+            comments,
+        });
+        console.log('updatedComment:', updatedComment);
         res.status(200).json(updatedComment);
     } catch (err) {
         console.error('댓글 수정 오류:', err);
@@ -114,18 +121,18 @@ const updateComment = async (req, res, next) => {
 // 페이지네이션된 댓글 목록 조회
 const getPaginatedComments = async (req, res, next) => {
     const { postId } = req.params;
-    let { lastCreatedAt, limit } = req.query;
+    let { firstCreatedAt, limit } = req.query;
 
     // 쿼리스트링 유효성 검사
-    limit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100); // 1부터 최대 100까지
-    lastCreatedAt = lastCreatedAt ? new Date(lastCreatedAt) : new Date(); // 기본값: 현재 시간
+    limit = Math.min(Math.max(parseInt(limit, 10) || 100, 1), 100); // 1부터 최대 100까지
+    firstCreatedAt = firstCreatedAt ? new Date(firstCreatedAt) : new Date(); // 기본값: 현재 시간
 
     try {
         // 데이터베이스에서 데이터 가져오기
         const comments = await commentModel.getPaginatedComments(
             postId,
             limit,
-            lastCreatedAt
+            firstCreatedAt
         );
 
         // 결과 반환
@@ -168,7 +175,10 @@ const deleteComment = async (req, res, next) => {
         // 댓글 업데이트
         await commentModel.updateCommentsCountById(comment.post_id);
         await commentModel.deleteCommentById(commentId);
-        res.status(200).json({ message: '댓글 삭제 완료' });
+        const comments = await commentModel.getCommentsByPostId(
+            comment.post_id
+        );
+        res.status(200).json({ message: '댓글 삭제 완료', comments });
     } catch (err) {
         console.error('댓글 삭제 오류:', err);
         next(err);

@@ -110,7 +110,7 @@ const updateProfile = async (req, res, next) => {
         return;
     }
 
-    if (!nickname || !profileImagePath) {
+    if (!nickname) {
         res.status(400).json({ message: '입력 항목 누락' });
         return;
     }

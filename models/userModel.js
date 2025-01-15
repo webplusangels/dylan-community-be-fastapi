@@ -3,7 +3,7 @@ const { getById, createRecord, formatDate } = require('../utils/utils');
 const { query } = require('../utils/dbUtils');
 
 // 필수 데이터 중복 확인 함수
-const isDuplicateUser = async (email, nickname) => {
+const isDuplicateUser = async (email, nickname, userId = null) => {
     let emailExists = false;
     let nicknameExists = false;
 
@@ -12,9 +12,11 @@ const isDuplicateUser = async (email, nickname) => {
         const emailSql = `
             SELECT COUNT(*) AS count
             FROM users
-            WHERE email = ?
+            WHERE email = ? ${userId ? 'AND id != ?' : ''}
         `;
-        const emailResult = await query(emailSql, email);
+        const emailParams = userId ? [email, userId] : [email];
+        const emailResult = await query(emailSql, emailParams);
+        console.log('emailResult:', emailResult);
         emailExists = emailResult[0].count > 0;
     }
 
@@ -22,9 +24,10 @@ const isDuplicateUser = async (email, nickname) => {
     const nicknameSql = `
         SELECT COUNT(*) AS count
         FROM users
-        WHERE nickname = ?
+        WHERE nickname = ? ${userId ? 'AND user_id != ?' : ''}
     `;
-    const nicknameResult = await query(nicknameSql, nickname);
+    const nicknameParams = userId ? [nickname, userId] : [nickname];
+    const nicknameResult = await query(nicknameSql, nicknameParams);
     nicknameExists = nicknameResult[0].count > 0;
 
     return { emailExists, nicknameExists };
@@ -69,6 +72,7 @@ const getUserByEmail = async (email) => {
         if (!rows.length) {
             throw new Error('사용자를 찾을 수 없습니다.');
         }
+        rows[0].profile_image_path = rows[0].profile_image_path || null;
         return rows[0];
     } catch (error) {
         console.error('사용자 데이터 조회 오류:', error.message);
@@ -136,16 +140,15 @@ const deleteUserById = async (id) => {
         await query(deleteLikesSql, [id]);
         // comments 테이블에서 삭제
         const deleteCommentsSql = `
-                DELETE FROM comments
-                WHERE user_id = ?
-            `;
+            DELETE FROM comments
+            WHERE user_id = ?
+        `;
         await query(deleteCommentsSql, [id]);
-
         // posts 테이블에서 삭제
         const deletePostsSql = `
-                DELETE FROM posts
-                WHERE user_id = ?
-            `;
+            DELETE FROM posts
+            WHERE user_id = ?
+        `;
         await query(deletePostsSql, [id]);
         // users 테이블에서 삭제
         const deleteUsersSql = `
