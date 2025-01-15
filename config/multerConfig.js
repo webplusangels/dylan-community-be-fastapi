@@ -32,7 +32,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
     storage,
-    limits: { fileSize: process.env.MAX_FILE_SIZE || 5 * 1024 * 1024 }, // 기본값: 5MB
+    limits: { fileSize: Number(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 }, // 기본값: 5MB
     fileFilter,
 });
 
