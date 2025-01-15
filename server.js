@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const session = require('express-session');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const errorHandler = require('./middlewares/errorHandler');
 const authRouter = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -9,11 +10,7 @@ const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 
-const APP_ENV = process.env.APP_ENV || 'development';
-
-if (APP_ENV === 'development') {
-    dotenv.config(); // 로컬에서는 .env 파일 사용
-}
+dotenv.config(); // 로컬에서는 .env 파일 사용
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -34,6 +31,14 @@ app.use(
         credentials: true,
     })
 );
+app.use(
+    '/api/',
+    rateLimit({
+        windowMs: 60 * 1000,
+        max: 100,
+        message: '잠시 후에 다시 시도하세요',
+    })
+); // 1분에 100회 요청 제한
 app.use(
     /* 세션 설정 */
     session({
