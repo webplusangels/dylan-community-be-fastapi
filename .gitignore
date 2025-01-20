@@ -35,10 +35,10 @@ build/
 
 # Environment variables
 .env
-constants.js
 
 # Temporal data
 data/
 
 # User uploaded files
-uploads/
+uploads/*
+!uploads/.gitkeep

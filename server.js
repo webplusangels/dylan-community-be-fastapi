@@ -2,7 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const session = require('express-session');
 const cors = require('cors');
-const { DEFAULTS } = require('./config/constants');
+const rateLimit = require('express-rate-limit');
 const errorHandler = require('./middlewares/errorHandler');
 const authRouter = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -10,10 +10,18 @@ const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 
-dotenv.config();
+dotenv.config(); // 로컬에서는 .env 파일 사용
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+if (
+    !process.env.COOKIE_SECRET ||
+    !process.env.DB_HOST ||
+    !process.env.DB_USER
+) {
+    console.error('환경 변수 설정이 올바르지 않습니다. 서버를 종료합니다.');
+    process.exit(1);
+}
 
 // 미들웨어 설정
 app.use(express.json());
@@ -24,6 +32,14 @@ app.use(
     })
 );
 app.use(
+    '/api/',
+    rateLimit({
+        windowMs: 60 * 1000,
+        max: 100,
+        message: '잠시 후에 다시 시도하세요',
+    })
+); // 1분에 100회 요청 제한
+app.use(
     /* 세션 설정 */
     session({
         secret: process.env.COOKIE_SECRET,
@@ -33,7 +49,7 @@ app.use(
         cookie: {
             httpOnly: true,
             secure: false,
-            maxAge: DEFAULTS.SESSION_TIMEOUT,
+            maxAge: Number(process.env.SESSION_TIMEOUT) || 86400000,
         },
     })
 );

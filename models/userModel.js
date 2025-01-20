@@ -3,7 +3,7 @@ const { getById, createRecord, formatDate } = require('../utils/utils');
 const { query } = require('../utils/dbUtils');
 
 // 필수 데이터 중복 확인 함수
-const isDuplicateUser = async (email, nickname, targetId = null) => {
+const isDuplicateUser = async (email, nickname, userId = null) => {
     let emailExists = false;
     let nicknameExists = false;
 
@@ -12,9 +12,11 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
         const emailSql = `
             SELECT COUNT(*) AS count
             FROM users
-            WHERE email = ? AND user_id != ?
+            WHERE email = ? ${userId ? 'AND id != ?' : ''}
         `;
-        const emailResult = await query(emailSql, [email, targetId || 0]);
+        const emailParams = userId ? [email, userId] : [email];
+        const emailResult = await query(emailSql, emailParams);
+        console.log('emailResult:', emailResult);
         emailExists = emailResult[0].count > 0;
     }
 
@@ -22,9 +24,10 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
     const nicknameSql = `
         SELECT COUNT(*) AS count
         FROM users
-        WHERE nickname = ? AND user_id != ?
+        WHERE nickname = ? ${userId ? 'AND user_id != ?' : ''}
     `;
-    const nicknameResult = await query(nicknameSql, [nickname, targetId || 0]);
+    const nicknameParams = userId ? [nickname, userId] : [nickname];
+    const nicknameResult = await query(nicknameSql, nicknameParams);
     nicknameExists = nicknameResult[0].count > 0;
 
     return { emailExists, nicknameExists };
@@ -32,6 +35,17 @@ const isDuplicateUser = async (email, nickname, targetId = null) => {
 
 // 사용자 데이터를 추가하는 함수
 const addUser = async (user) => {
+    // 이메일, 닉네임 중복 확인
+    const { emailExists, nicknameExists } = await isDuplicateUser(
+        user.email,
+        user.nickname
+    );
+    if (emailExists) {
+        throw new Error('이미 사용 중인 이메일입니다.');
+    }
+    if (nicknameExists) {
+        throw new Error('이미 사용 중인 닉네임입니다.');
+    }
     const data = {
         user_id: uuidv4(),
         email: user.email,
@@ -58,6 +72,7 @@ const getUserByEmail = async (email) => {
         if (!rows.length) {
             throw new Error('사용자를 찾을 수 없습니다.');
         }
+        rows[0].profile_image_path = rows[0].profile_image_path || null;
         return rows[0];
     } catch (error) {
         console.error('사용자 데이터 조회 오류:', error.message);
@@ -117,11 +132,30 @@ const updateUserProfile = async (id, updatedData) => {
 const deleteUserById = async (id) => {
     try {
         console.log('id:', id);
-        const sql = `
+        // likes 테이블에서 삭제
+        const deleteLikesSql = `
+            DELETE FROM likes
+            WHERE user_id = ?
+        `;
+        await query(deleteLikesSql, [id]);
+        // comments 테이블에서 삭제
+        const deleteCommentsSql = `
+            DELETE FROM comments
+            WHERE user_id = ?
+        `;
+        await query(deleteCommentsSql, [id]);
+        // posts 테이블에서 삭제
+        const deletePostsSql = `
+            DELETE FROM posts
+            WHERE user_id = ?
+        `;
+        await query(deletePostsSql, [id]);
+        // users 테이블에서 삭제
+        const deleteUsersSql = `
             DELETE FROM users
             WHERE user_id = ?
         `;
-        await query(sql, [id]);
+        await query(deleteUsersSql, [id]);
     } catch (error) {
         console.error('사용자 삭제 오류:', error.message);
         throw error;

@@ -8,6 +8,31 @@ const getCommentById = async (id) => {
     return getById('comments', id, 'comment_id');
 };
 
+const getCommentsByPostId = async (postId) => {
+    try {
+        const sql = `
+            SELECT 
+                comments.comment_id, 
+                comments.post_id, 
+                comments.user_id, 
+                comments.content, 
+                comments.created_at, 
+                comments.updated_at,
+                users.nickname AS author,
+                users.profile_image_path AS profile_image
+            FROM comments
+            JOIN users ON comments.user_id = users.user_id
+            WHERE comments.post_id = ?
+            ORDER BY created_at DESC
+        `;
+        const rows = await query(sql, [postId]);
+        return rows;
+    } catch (error) {
+        console.error('댓글 데이터 조회 오류:', error.message);
+        throw error;
+    }
+};
+
 // 댓글 생성 함수
 const createComment = async (comment, postId, userId) => {
     const data = {
@@ -43,11 +68,7 @@ const updateCommentById = async (content, id) => {
 };
 
 // 페이지네이션된 댓글 목록 조회 함수
-const getPaginatedComments = async (
-    postId,
-    limit = 10,
-    lastCreatedAt = new Date()
-) => {
+const getPaginatedComments = async (postId, limit, firstCreatedAt) => {
     try {
         const sql = `
             SELECT 
@@ -61,13 +82,12 @@ const getPaginatedComments = async (
                 users.profile_image_path AS profile_image
             FROM comments
             JOIN users ON comments.user_id = users.user_id
-            WHERE comments.post_id = ? AND (comments.created_at < ? OR ? IS NULL)
-            ORDER BY created_at DESC
+            WHERE comments.post_id = ? AND comments.created_at < ?
             LIMIT ?`;
+
         const rows = await query(sql, [
             postId,
-            formatDate(lastCreatedAt),
-            lastCreatedAt || null,
+            formatDate(firstCreatedAt),
             limit,
         ]);
         return rows;
@@ -118,6 +138,7 @@ const updateCommentsCountById = async (postId) => {
 
 module.exports = {
     getCommentById,
+    getCommentsByPostId,
     createComment,
     updateCommentById,
     getPaginatedComments,

@@ -1,5 +1,7 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 // 환경 변수가 설정되었는지 확인
 if (

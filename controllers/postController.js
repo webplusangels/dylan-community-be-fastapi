@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 const postModel = require('../models/postModel');
+// const { setSessionUser } = require('../utils/utils');
 const { getUploadedFileUrl } = require('../utils/uploadUtils');
 
 // id로 단일 포스트 조회
@@ -15,8 +16,16 @@ const getPostById = async (req, res, next) => {
             return;
         }
 
-        // 조회 수 증가
-        await postModel.updatePostViewById(id, post.views + 1);
+        // 세션을 사용해 조회수 증가
+        if (!req.session.viewed) {
+            req.session.viewed = {};
+        }
+
+        if (!req.session.viewed[id]) {
+            await postModel.updatePostViewById(id);
+            req.session.viewed[id] = true;
+        }
+
         res.status(200).json(post);
     } catch (err) {
         console.error('포스트 조회 오류:', err);
@@ -29,7 +38,8 @@ const getPaginatedPosts = async (req, res, next) => {
     let { lastCreatedAt, limit } = req.query;
 
     // 쿼리스트링 유효성 검사
-    limit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100); // 1부터 최대 100까지
+    limit = parseInt(limit, 10) || 100; // 기본값: 100
+    limit = Math.min(Math.max(limit, 1), 100); // 1부터 최대 100까지
     lastCreatedAt = lastCreatedAt ? new Date(lastCreatedAt) : new Date(); // 기본값: 현재 시간
 
     try {
@@ -70,7 +80,8 @@ const createPost = async (req, res, next) => {
             { title, content, image_path },
             userId
         );
-        res.status(201).json({ message: '포스트 작성 완료', post_id: postId });
+        const post_id = await postModel.getPostIdById(postId);
+        res.status(201).json({ message: '포스트 작성 완료', post_id });
     } catch (err) {
         console.error('포스트 생성 오류:', err);
         next(err);
@@ -80,7 +91,7 @@ const createPost = async (req, res, next) => {
 // 포스트 수정
 const updatePostById = async (req, res, next) => {
     const { id } = req.params;
-    const { title, content } = req.body;
+    const { title, content, image_path } = req.body;
 
     // 필수 필드 검증
     if (!title || !content) {
@@ -116,8 +127,11 @@ const updatePostById = async (req, res, next) => {
             return;
         }
 
-        await postModel.updatePostById({ title, content }, id);
-        res.status(200).json({ message: '포스트 수정 완료' });
+        const post_id = await postModel.updatePostById(
+            { title, content, image_path },
+            id
+        );
+        res.status(200).json({ message: '포스트 수정 완료', post_id });
     } catch (err) {
         console.error('포스트 수정 오류:', err);
         next(err);
@@ -193,10 +207,15 @@ const uploadPostImages = (req, res, next) => {
 
 // 좋아요 토글
 const toggleLike = async (req, res, next) => {
-    const { postId } = req.params;
-    const userId = req.session.user.user_id;
-
     try {
+        if (!req.session.user || !req.session.user.user_id) {
+            res.status(401).json({ message: '로그인이 필요합니다.' });
+            return;
+        }
+
+        const { postId } = req.params;
+        const userId = req.session.user.user_id;
+
         const { isLike, updatedLikes } = await postModel.toggleLike(
             postId,
             userId
@@ -210,11 +229,16 @@ const toggleLike = async (req, res, next) => {
 
 // 좋아요 상태 조회
 const getLikeStatus = async (req, res, next) => {
-    const { postId } = req.params;
-    const userId = req.session.user.user_id;
-
     try {
+        if (!req.session.user || !req.session.user.user_id) {
+            res.status(401).json({ message: '로그인이 필요합니다.' });
+            return;
+        }
+
+        const { postId } = req.params;
+        const userId = req.session.user.user_id;
         const isLike = await postModel.getLikeStatus(postId, userId);
+
         res.status(200).json({ isLike });
     } catch (err) {
         console.error('포스트 좋아요 상태 조회 오류:', err);

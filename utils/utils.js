@@ -2,6 +2,13 @@ const { query } = require('./dbUtils');
 
 // ID로 단일 레코드 조회 함수
 const getById = async (table, id, idField = 'id') => {
+    if (!table || typeof table !== 'string') {
+        throw new Error('유효한 테이블 이름이 필요합니다.');
+    }
+    if (!id) {
+        throw new Error('유효한 ID가 필요합니다.');
+    }
+
     try {
         const sql = `
             SELECT *
@@ -20,6 +27,13 @@ const getById = async (table, id, idField = 'id') => {
 
 // 레코드 생성 함수
 const createRecord = async (table, data) => {
+    if (!table || typeof table !== 'string') {
+        throw new Error('유효한 테이블 이름이 필요합니다.');
+    }
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+        throw new Error('유효한 데이터가 필요합니다.');
+    }
+
     try {
         const columns = Object.keys(data).join(', ');
         const placeholders = Object.keys(data)
@@ -37,13 +51,44 @@ const createRecord = async (table, data) => {
     }
 };
 
-// 날짜 포맷 함수
+// 날짜 포맷 함수 (한국 시간)
 const formatDate = (date) => {
-    return date.toISOString().slice(0, 19).replace('T', ' ');
+    const options = {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false, // 24시간 형식 사용
+    };
+
+    // 한국 시간대로 변환된 문자열을 얻음
+    const koreanDateStr = date.toLocaleString('en-US', options);
+
+    // 문자열을 원하는 포맷으로 변환
+    const [datePart, timePart] = koreanDateStr.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hour, minute, second] = timePart.split(':');
+
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}`;
+};
+
+// 세션 사용자 설정 함수
+const setSessionUser = (req, user) => {
+    req.session.user = {
+        user_id: user.user_id,
+        email: user.email,
+        nickname: user.nickname,
+        profile_image_path: user.profile_image_path,
+        viewed: user.viewed,
+    };
 };
 
 module.exports = {
     getById,
     createRecord,
     formatDate,
+    setSessionUser,
 };
