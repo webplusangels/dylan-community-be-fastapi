@@ -207,10 +207,15 @@ const uploadPostImages = (req, res, next) => {
 
 // 좋아요 토글
 const toggleLike = async (req, res, next) => {
-    const { postId } = req.params;
-    const userId = req.session.user.user_id;
-
     try {
+        if (!req.session.user || !req.session.user.user_id) {
+            res.status(401).json({ message: '로그인이 필요합니다.' });
+            return;
+        }
+
+        const { postId } = req.params;
+        const userId = req.session.user.user_id;
+
         const { isLike, updatedLikes } = await postModel.toggleLike(
             postId,
             userId
@@ -224,11 +229,16 @@ const toggleLike = async (req, res, next) => {
 
 // 좋아요 상태 조회
 const getLikeStatus = async (req, res, next) => {
-    const { postId } = req.params;
-    const userId = req.session.user.user_id;
-
     try {
+        if (!req.session.user || !req.session.user.user_id) {
+            res.status(401).json({ message: '로그인이 필요합니다.' });
+            return;
+        }
+
+        const { postId } = req.params;
+        const userId = req.session.user.user_id;
         const isLike = await postModel.getLikeStatus(postId, userId);
+
         res.status(200).json({ isLike });
     } catch (err) {
         console.error('포스트 좋아요 상태 조회 오류:', err);

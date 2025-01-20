@@ -272,6 +272,30 @@ const uploadProfileImage = async (req, res, next) => {
     }
 };
 
+// 이메일 중복 확인
+const checkEmail = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        const user = await userModel.getUserByEmail(email);
+
+        if (user) {
+            res.status(409).json({ message: '이미 사용 중인 이메일입니다.' });
+            return;
+        }
+
+        res.status(200).json({ message: '사용 가능한 이메일입니다.' });
+    } catch (err) {
+        if (err.message === '사용자를 찾을 수 없습니다.') {
+            res.status(200).json({ message: '사용 가능한 이메일입니다.' });
+        } else {
+            console.error('이메일 중복 확인 오류:', err);
+            next(err);
+        }
+    }
+};
+
+// 닉네임 중복 확인
+
 module.exports = {
     getSession,
     getProfile,
@@ -282,4 +306,5 @@ module.exports = {
     deleteProfile,
     resetPassword,
     uploadProfileImage,
+    checkEmail,
 };

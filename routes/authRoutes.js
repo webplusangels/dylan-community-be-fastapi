@@ -15,4 +15,7 @@ router.post('/login', userController.loginUser);
 // 로그아웃 라우트
 router.delete('/logout', userController.logoutUser);
 
+// 이메일 중복 확인 라우트
+router.post('/check-email', userController.checkEmail);
+
 module.exports = router;

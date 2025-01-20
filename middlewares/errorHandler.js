@@ -19,6 +19,13 @@ const errorHandler = (err, req, res, next) => {
             data: err.data,
         });
     }
+
+    if (err.status === 401) {
+        return res.status(401).json({
+            message: '로그인이 필요합니다.',
+        });
+    }
+
     return res.status(err.status || 500).json({
         message: err.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack }), // 개발 환경에서는 스택 트레이스도 응답에 포함
