@@ -55,11 +55,6 @@ app.use(
 );
 
 // 라우터 등록
-// 테스트용 라우터
-app.get('/test', (req, res) => {
-    res.json({ message: '테스트 엔드포인트' });
-});
-
 // 서브 라우터
 const apiRouter = express.Router();
 apiRouter.use('/auth', authRouter); // 인증 관련 API
