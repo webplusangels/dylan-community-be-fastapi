@@ -77,7 +77,6 @@ const addUser = async (req, res, next) => {
 
 const getProfile = async (req, res, next) => {
     const { user } = req.session;
-    console.log('user:', user);
     if (!user) {
         res.status(401).json({ message: '로그인이 필요합니다.' });
         return;
@@ -151,8 +150,8 @@ const deleteProfile = async (req, res, next) => {
     }
 
     try {
-        await userModel.deleteUserById(user.id);
-
+        await userModel.deleteUserById(user.user_id);
+        console.log('탈퇴 성공');
         req.session.destroy((err) => {
             if (err) {
                 console.error('세션 무효화 오류:', err);
@@ -180,6 +179,7 @@ const loginUser = async (req, res, next) => {
     }
 
     try {
+        // 사용자가 있는지 확인
         const user = await authenticateUser(email, password);
         if (!user) {
             throw new UnauthorizedError('로그인 실패');
@@ -293,8 +293,6 @@ const checkEmail = async (req, res, next) => {
         }
     }
 };
-
-// 닉네임 중복 확인
 
 module.exports = {
     getSession,

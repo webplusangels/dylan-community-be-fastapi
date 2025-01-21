@@ -1,6 +1,5 @@
 /* eslint-disable camelcase */
 const postModel = require('../models/postModel');
-// const { setSessionUser } = require('../utils/utils');
 const { getUploadedFileUrl } = require('../utils/uploadUtils');
 
 // id로 단일 포스트 조회
@@ -8,6 +7,8 @@ const getPostById = async (req, res, next) => {
     const { id } = req.params;
 
     try {
+        // 좋아요 수 업데이트
+        await postModel.updatePostLikesById(id);
         const post = await postModel.getPostById(id);
         if (!post) {
             res.status(404).json({

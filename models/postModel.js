@@ -204,7 +204,6 @@ const updatePostLikesById = async (postId) => {
         `;
         await query(sqlUpdateLikes, [likes, postId]);
 
-        console.log(`Post ${postId} 좋아요 수 업데이트 완료: ${likes}`);
         return likes; // 업데이트된 좋아요 수 반환
     } catch (error) {
         console.error('포스트 좋아요 수 업데이트 오류:', error.message);
@@ -228,7 +227,6 @@ const updatePostCommentsCountById = async (postId) => {
             WHERE post_id = ?
         `;
         await query(updateSql, [comments_count, postId]);
-        console.log(comments_count);
         return comments_count;
     } catch (error) {
         console.error('포스트 댓글 수 정보 업데이트 오류:', error.message);
@@ -246,7 +244,6 @@ const toggleLike = async (postId, userId) => {
         `;
         const [result] = await query(sqlCheck, [postId, userId]);
         const isLike = result.count > 0;
-        console.log(`Post ${postId} 좋아요 상태: ${isLike}`);
         if (isLike) {
             const sqlDelete = `
                 DELETE FROM likes
