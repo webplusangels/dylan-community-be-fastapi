@@ -10,7 +10,7 @@ const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 
-dotenv.config(); // 로컬에서는 .env 파일 사용
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -27,7 +27,10 @@ if (
 app.use(express.json());
 app.use(
     cors({
-        origin: 'http://localhost:3000',
+        origin: [
+            'http://localhost:3000',
+            `http://${process.env.EC2_PUBLIC_IP}:3000`,
+        ],
         credentials: true,
     })
 );
@@ -38,14 +41,14 @@ app.use(
         max: 100,
         message: '잠시 후에 다시 시도하세요',
     })
-); // 1분에 100회 요청 제한
+);
 app.use(
     /* 세션 설정 */
     session({
         secret: process.env.COOKIE_SECRET,
         resave: true,
         saveUninitialized: true,
-        rolling: true, // 세션 요청 시 쿠키 유효시간 초기화
+        rolling: true,
         cookie: {
             httpOnly: true,
             secure: false,
@@ -55,11 +58,6 @@ app.use(
 );
 
 // 라우터 등록
-// 테스트용 라우터
-app.get('/test', (req, res) => {
-    res.json({ message: '테스트 엔드포인트' });
-});
-
 // 서브 라우터
 const apiRouter = express.Router();
 apiRouter.use('/auth', authRouter); // 인증 관련 API

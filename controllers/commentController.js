@@ -110,7 +110,6 @@ const updateComment = async (req, res, next) => {
             message: '댓글 생성 완료',
             comments,
         });
-        console.log('updatedComment:', updatedComment);
         res.status(200).json(updatedComment);
     } catch (err) {
         console.error('댓글 수정 오류:', err);

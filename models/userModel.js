@@ -16,7 +16,6 @@ const isDuplicateUser = async (email, nickname, userId = null) => {
         `;
         const emailParams = userId ? [email, userId] : [email];
         const emailResult = await query(emailSql, emailParams);
-        console.log('emailResult:', emailResult);
         emailExists = emailResult[0].count > 0;
     }
 
@@ -55,7 +54,6 @@ const addUser = async (user) => {
         created_at: formatDate(new Date()),
         updated_at: formatDate(new Date()),
     };
-    console.log('data:', data);
     const userId = await createRecord('users', data);
     return { ...data, id: userId };
 };
@@ -131,7 +129,6 @@ const updateUserProfile = async (id, updatedData) => {
 // 사용자 ID로 사용자 데이터를 삭제하는 함수
 const deleteUserById = async (id) => {
     try {
-        console.log('id:', id);
         // likes 테이블에서 삭제
         const deleteLikesSql = `
             DELETE FROM likes
