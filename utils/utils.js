@@ -86,9 +86,15 @@ const setSessionUser = (req, user) => {
     };
 };
 
+// 에러 응답 함수
+const handleErrorResponse = (res, statusCode, message) => {
+    res.status(statusCode).json({ message });
+};
+
 module.exports = {
     getById,
     createRecord,
     formatDate,
     setSessionUser,
+    handleErrorResponse,
 };

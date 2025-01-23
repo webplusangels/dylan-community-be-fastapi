@@ -26,6 +26,20 @@ const errorHandler = (err, req, res, next) => {
         });
     }
 
+    if (err.status === 403) {
+        return res.status(403).json({
+            success: false,
+            message: '접근이 금지되었습니다.',
+        });
+    }
+
+    if (err.status === 404) {
+        return res.status(404).json({
+            success: false,
+            message: '리소스를 찾을 수 없습니다.',
+        });
+    }
+
     return res.status(err.status || 500).json({
         message: err.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack }), // 개발 환경에서는 스택 트레이스도 응답에 포함
