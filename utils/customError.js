@@ -37,6 +37,13 @@ class NotFoundError extends CustomError {
     }
 }
 
+class ConflictError extends CustomError {
+    constructor(message = 'Conflict') {
+        super(message, 409);
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
+
 // 5xx 에러 클래스
 class InternalServerError extends CustomError {
     constructor(message = 'Internal Server Error') {
@@ -58,6 +65,7 @@ module.exports = {
     UnauthorizedError,
     ForbiddenError,
     NotFoundError,
+    ConflictError,
     InternalServerError,
     ServiceUnavailableError,
 };

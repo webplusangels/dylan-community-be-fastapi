@@ -3,7 +3,7 @@ const userModel = require('../models/userModel');
 const { setSessionUser } = require('../utils/utils');
 const { getUploadedFileUrl } = require('../utils/uploadUtils');
 const { ERROR_MESSAGES } = require('../config/constants');
-const { UnauthorizedError } = require('../utils/customError');
+const { UnauthorizedError, ConflictError } = require('../utils/customError');
 
 // 세션 확인
 const getSession = (req, res) => {
@@ -279,8 +279,7 @@ const checkEmail = async (req, res, next) => {
         const user = await userModel.getUserByEmail(email);
 
         if (user) {
-            res.status(409).json({ message: '이미 사용 중인 이메일입니다.' });
-            return;
+            throw new ConflictError('이미 존재하는 이메일입니다.');
         }
 
         res.status(200).json({ message: '사용 가능한 이메일입니다.' });
