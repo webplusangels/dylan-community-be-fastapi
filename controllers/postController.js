@@ -17,16 +17,6 @@ const getPostById = async (req, res, next) => {
             return;
         }
 
-        // 세션을 사용해 조회수 증가
-        if (!req.session.viewed) {
-            req.session.viewed = {};
-        }
-
-        if (!req.session.viewed[id]) {
-            await postModel.updatePostViewById(id);
-            req.session.viewed[id] = true;
-        }
-
         res.status(200).json(post);
     } catch (err) {
         console.error('포스트 조회 오류:', err);
@@ -57,8 +47,8 @@ const getPaginatedPosts = async (req, res, next) => {
 
 // 포스트 생성
 const createPost = async (req, res, next) => {
+    const { user } = req;
     const { title, content, image_path } = req.body;
-    const userId = req.session.user.user_id;
 
     // 필수 필드 검증
     if (!title || !content) {
@@ -69,7 +59,7 @@ const createPost = async (req, res, next) => {
     }
 
     // 사용자 검증
-    if (!userId) {
+    if (!user.user_id) {
         res.status(401).json({
             message: '권한이 없습니다.',
         });
@@ -79,7 +69,7 @@ const createPost = async (req, res, next) => {
     try {
         const postId = await postModel.createPost(
             { title, content, image_path },
-            userId
+            user.user_id
         );
         const post_id = await postModel.getPostIdById(postId);
         res.status(201).json({ message: '포스트 작성 완료', post_id });
@@ -102,14 +92,14 @@ const updatePostById = async (req, res, next) => {
         return;
     }
 
-    // 세션 검증
-    if (!req.session.user) {
+    // JWT 검증
+    const { user } = req;
+    if (!user || !user.user_id) {
         res.status(401).json({
             message: '로그인이 필요합니다.',
         });
         return;
     }
-    const userId = req.session.user.user_id;
 
     try {
         const post = await postModel.getPostById(id);
@@ -121,7 +111,7 @@ const updatePostById = async (req, res, next) => {
         }
 
         // 사용자 검증
-        if (post.user_id !== userId) {
+        if (post.user_id !== user.user_id) {
             res.status(403).json({
                 message: '권한이 없습니다.',
             });
@@ -142,14 +132,15 @@ const updatePostById = async (req, res, next) => {
 // 포스트 삭제
 const deletePostById = async (req, res, next) => {
     const { id } = req.params;
+    const { user } = req;
 
     // 로그인 상태 확인
-    if (!req.session.user) {
-        res.status(401).json({ message: '로그인이 필요합니다.' });
+    if (!user || !user.user_id) {
+        res.status(401).json({
+            message: '로그인이 필요합니다.',
+        });
         return;
     }
-
-    const userId = req.session.user.user_id;
 
     try {
         const post = await postModel.getPostById(id);
@@ -161,7 +152,7 @@ const deletePostById = async (req, res, next) => {
         }
 
         // 사용자 검증
-        if (post.user_id !== userId) {
+        if (post.user_id !== user.user_id) {
             res.status(403).json({
                 message: '권한이 없습니다.',
             });
@@ -209,17 +200,19 @@ const uploadPostImages = (req, res, next) => {
 // 좋아요 토글
 const toggleLike = async (req, res, next) => {
     try {
-        if (!req.session.user || !req.session.user.user_id) {
-            res.status(401).json({ message: '로그인이 필요합니다.' });
+        const { user } = req;
+        if (!user || !user.user_id) {
+            res.status(401).json({
+                message: '로그인이 필요합니다.',
+            });
             return;
         }
 
         const { postId } = req.params;
-        const userId = req.session.user.user_id;
 
         const { isLike, updatedLikes } = await postModel.toggleLike(
             postId,
-            userId
+            user.user_id
         );
         res.status(200).json({ isLike, likes: updatedLikes });
     } catch (err) {
@@ -231,14 +224,16 @@ const toggleLike = async (req, res, next) => {
 // 좋아요 상태 조회
 const getLikeStatus = async (req, res, next) => {
     try {
-        if (!req.session.user || !req.session.user.user_id) {
-            res.status(401).json({ message: '로그인이 필요합니다.' });
+        const { user } = req;
+        if (!user || !user.user_id) {
+            res.status(401).json({
+                message: '로그인이 필요합니다.',
+            });
             return;
         }
 
         const { postId } = req.params;
-        const userId = req.session.user.user_id;
-        const isLike = await postModel.getLikeStatus(postId, userId);
+        const isLike = await postModel.getLikeStatus(postId, user.user_id);
 
         res.status(200).json({ isLike });
     } catch (err) {
@@ -260,6 +255,19 @@ const getCommentCount = async (req, res, next) => {
     }
 };
 
+// 조회수 업데이트
+const incrementPostView = async (req, res, next) => {
+    const { postId } = req.params;
+
+    try {
+        await postModel.updatePostViewById(postId);
+        res.status(200).json({ message: '조회수 증가 완료' });
+    } catch (err) {
+        console.error('조회수 증가 오류:', err);
+        next(err);
+    }
+};
+
 module.exports = {
     getPostById,
     getPaginatedPosts,
@@ -271,4 +279,5 @@ module.exports = {
     toggleLike,
     getLikeStatus,
     getCommentCount,
+    incrementPostView,
 };

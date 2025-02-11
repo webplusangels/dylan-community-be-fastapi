@@ -1,56 +1,46 @@
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
-const upload = require('../config/multerConfig');
-const userController = require('../controllers/userController');
-const postController = require('../controllers/postController');
+const AWS = require('aws-sdk');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
-// 업로드 함수
-const handleUpload = (req, res, next) => {
-    upload.single('image')(req, res, (err) => {
-        if (err) {
-            if (err instanceof multer.MulterError) {
-                if (err.code === 'LIMIT_FILE_SIZE') {
-                    console.error('파일 크기 초과:', err);
-                    res.status(400).json({
-                        message: '파일 크기가 너무 큽니다. (최대 5MB)',
-                    });
-                    return;
-                }
-                console.error('Multer 오류:', err);
-                res.status(400).json({
-                    message: '이미지 업로드에 실패했습니다.',
-                });
-                return;
-            }
-            console.error('이미지 업로드 오류:', err);
-            res.status(500).json({
-                message: '서버 오류가 발생했습니다.',
-            });
-        }
-        next();
-    });
-};
+const s3 = new AWS.S3({
+    region: process.env.AWS_REGION,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
 
-// Post 이미지 업로드
-router.post('/post-images', handleUpload, postController.uploadPostImages);
+// ✅ **Presigned URL 생성 API**
+router.get('/generate-presigned-url', async (req, res) => {
+    const { fileName, fileType, category } = req.query;
 
-// User 프로필 이미지 업로드
-router.post('/profile-image', handleUpload, userController.uploadProfileImage);
-
-// 이미지 조회
-router.get(`/:imagePath`, (req, res) => {
-    const { imagePath } = req.params;
-    const imgPath = path.join(__dirname, '../uploads', imagePath);
-
-    if (fs.existsSync(imgPath)) {
-        res.sendFile(imgPath);
+    if (!fileName || !fileType || !category) {
+        res.status(400).json({
+            error: '파일 이름, 파일 타입, 카테고리가 모두 필요합니다',
+        });
         return;
     }
-    res.status(404).json({ message: '이미지를 찾을 수 없습니다.' });
+    const folder = category === 'profile' ? 'profiles' : 'posts';
+    const extension = fileName.split('.').pop(); // 확장자 추출
+    const newFileName = `${folder}/${uuidv4()}.${extension}`;
+    const s3Params = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `images/${newFileName}`,
+        Expires: 60, // Presigned URL 유효 시간 (초)
+        ContentType: fileType,
+        ACL: `private`,
+    };
+
+    try {
+        const uploadURL = await s3.getSignedUrlPromise('putObject', s3Params);
+
+        res.json({ uploadURL, newFileName });
+    } catch (error) {
+        console.error('Presigned URL 생성 중 에러:', error);
+        res.status(500).json({
+            error: 'Presigned URL을 만드는데 실패했습니다',
+        });
+    }
 });
 
 module.exports = router;
