@@ -1,26 +1,22 @@
+/* eslint-disable camelcase */
 const bcrypt = require('bcrypt');
 const userModel = require('../models/userModel');
-const { setSessionUser } = require('../utils/utils');
 const { getUploadedFileUrl } = require('../utils/uploadUtils');
-const { ERROR_MESSAGES } = require('../config/constants');
-const { UnauthorizedError } = require('../utils/customError');
+const { generateToken } = require('../utils/jwt');
+const { UnauthorizedError, ConflictError } = require('../utils/customError');
+const { deleteProfileImage } = require('../utils/uploadUtils');
 
 // 세션 확인
 const getSession = (req, res) => {
     try {
-        // 세션 유효성 확인
-        if (!req.session || !req.session.user) {
-            res.status(401).json({
-                message: '세션이 만료되었거나 로그인이 필요합니다.',
-            });
+        const { user } = req;
+        if (!user) {
+            res.status(401).json({ message: '로그인이 필요합니다.' });
             return;
         }
-
-        // 세션 정보 반환
-        const { user } = req.session;
         res.status(200).json(user);
     } catch (error) {
-        console.error('세션 정보 조회 오류:', error.message);
+        console.error('사용자 정보 조회 오류:', error.message);
         res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
 };
@@ -65,10 +61,9 @@ const addUser = async (req, res, next) => {
         };
 
         const newUser = await userModel.addUser(user);
+        const token = generateToken(newUser);
 
-        setSessionUser(req, newUser);
-
-        res.status(201).json({ message: '사용자 등록 성공' });
+        res.status(201).json({ message: '사용자 등록 성공', token });
     } catch (err) {
         console.error('사용자 등록 오류:', err);
         next(err);
@@ -76,15 +71,13 @@ const addUser = async (req, res, next) => {
 };
 
 const getProfile = async (req, res, next) => {
-    const { user } = req.session;
+    const { user } = req;
     if (!user) {
         res.status(401).json({ message: '로그인이 필요합니다.' });
         return;
     }
 
     try {
-        req.session.touch(); // 세션 만료 시간 갱신
-
         const userProfile = await userModel.getUserByEmail(user.email);
         if (!userProfile) {
             res.status(404).json({
@@ -92,8 +85,24 @@ const getProfile = async (req, res, next) => {
             });
             return;
         }
+        const {
+            user_id,
+            email,
+            nickname,
+            profile_image_path,
+            created_at,
+            updated_at,
+        } = userProfile;
+        const filteredProfile = {
+            user_id,
+            email,
+            nickname,
+            profile_image_path,
+            created_at,
+            updated_at,
+        };
 
-        res.status(200).json(userProfile);
+        res.status(200).json(filteredProfile);
     } catch (err) {
         console.error('프로필 조회 오류:', err);
         next(err);
@@ -101,7 +110,7 @@ const getProfile = async (req, res, next) => {
 };
 
 const updateProfile = async (req, res, next) => {
-    const { user } = req.session;
+    const { user } = req;
     const { nickname, profileImagePath } = req.body;
 
     if (!user) {
@@ -120,20 +129,7 @@ const updateProfile = async (req, res, next) => {
             profileImagePath,
         });
 
-        // 세션 사용자 정보 업데이트
-        setSessionUser(req, updatedUser);
-
-        // 변경된 세션 저장 후 응답
-        req.session.save((err) => {
-            if (err) {
-                console.error('세션 저장 오류:', err);
-                res.status(500).json({
-                    message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-                });
-                return;
-            }
-            res.status(200).json({ message: '프로필 업데이트 성공' });
-        });
+        res.status(200).json({ message: '프로필 업데이트 성공', updatedUser });
     } catch (err) {
         console.error('프로필 업데이트 오류:', err);
         next(err);
@@ -142,7 +138,7 @@ const updateProfile = async (req, res, next) => {
 
 // 사용자 삭제
 const deleteProfile = async (req, res, next) => {
-    const { user } = req.session;
+    const { user } = req;
 
     if (!user) {
         res.status(401).json({ message: '로그인이 필요합니다.' });
@@ -150,19 +146,16 @@ const deleteProfile = async (req, res, next) => {
     }
 
     try {
+        // S3에 저장된 프로필 이미지 삭제
+        if (user.profile_image_path) {
+            await deleteProfileImage(
+                user.user_id,
+                user.profile_image_path.split('/').pop()
+            );
+        }
         await userModel.deleteUserById(user.user_id);
         console.log('탈퇴 성공');
-        req.session.destroy((err) => {
-            if (err) {
-                console.error('세션 무효화 오류:', err);
-                res.status(500).json({
-                    message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
-                });
-                return;
-            }
-            res.clearCookie('connect.sid'); // 클라이언트 측 세션 쿠키 삭제
-            res.status(200).json({ message: '사용자 삭제 성공' });
-        });
+        res.status(200).json({ message: '사용자 삭제 성공' });
     } catch (err) {
         console.error('사용자 삭제 오류:', err);
         next(err);
@@ -184,13 +177,9 @@ const loginUser = async (req, res, next) => {
         if (!user) {
             throw new UnauthorizedError('로그인 실패');
         }
-
-        // 세션 사용자 설정
-        setSessionUser(req, user);
-
+        const token = generateToken(user);
         res.status(200).json({
-            message: '로그인 성공',
-            user: req.session.user,
+            token,
         });
     } catch (err) {
         console.error('로그인 오류:', err);
@@ -201,14 +190,8 @@ const loginUser = async (req, res, next) => {
 // 사용자 로그아웃
 const logoutUser = (req, res, next) => {
     try {
-        // 세션 무효화
-        req.session.destroy((err) => {
-            if (err) {
-                throw err;
-            }
-            res.clearCookie('connect.sid'); // 클라이언트 측 세션 쿠키 삭제
-            res.status(200).json({ message: '로그아웃 성공' });
-        });
+        const { user } = req;
+        res.status(200).json({ message: '로그아웃 성공', user });
     } catch (err) {
         console.error('로그아웃 오류:', err);
         next(err);
@@ -218,9 +201,7 @@ const logoutUser = (req, res, next) => {
 // 패스워드 재설정
 const resetPassword = async (req, res, next) => {
     const { password } = req.body;
-
-    // 세션에서 사용자 정보 가져오기
-    const { user } = req.session;
+    const { user } = req;
 
     if (!user) {
         res.status(401).json({ message: '로그인이 필요합니다.' });
@@ -245,16 +226,7 @@ const resetPassword = async (req, res, next) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         await userModel.updateUserPassword(user.email, hashedPassword);
 
-        // 세션 무효화
-        req.session.destroy((err) => {
-            if (err) {
-                console.error('세션 무효화 오류:', err);
-                next(err);
-                return;
-            }
-            res.clearCookie('connect.sid'); // 클라이언트 측 세션 쿠키 삭제
-            res.status(200).json({ message: '패스워드 재설정 성공' });
-        });
+        res.status(200).json({ message: '패스워드 재설정 성공' });
     } catch (err) {
         console.error('패스워드 재설정 오류:', err);
         next(err);
@@ -279,8 +251,7 @@ const checkEmail = async (req, res, next) => {
         const user = await userModel.getUserByEmail(email);
 
         if (user) {
-            res.status(409).json({ message: '이미 사용 중인 이메일입니다.' });
-            return;
+            throw new ConflictError('이미 존재하는 이메일입니다.');
         }
 
         res.status(200).json({ message: '사용 가능한 이메일입니다.' });

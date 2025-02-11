@@ -34,16 +34,16 @@ const createComment = async (req, res, next) => {
     }
 
     // 세션 검증
-    if (!req.session.user) {
+    const { user } = req;
+    if (!user || !user.user_id) {
         res.status(401).json({
             message: '로그인이 필요합니다.',
         });
         return;
     }
-    const userId = req.session.user.user_id;
 
     try {
-        await commentModel.createComment({ content }, postId, userId);
+        await commentModel.createComment({ content }, postId, user.user_id);
         // 댓글 수 업데이트
         await commentModel.updateCommentsCountById(postId);
         const comments = await commentModel.getCommentsByPostId(postId);
@@ -71,13 +71,13 @@ const updateComment = async (req, res, next) => {
     }
 
     // 세션 검증
-    if (!req.session.user) {
+    const { user } = req;
+    if (!user || !user.user_id) {
         res.status(401).json({
             message: '로그인이 필요합니다.',
         });
         return;
     }
-    const userId = req.session.user.user_id;
 
     try {
         const existingComment = await getById(
@@ -93,7 +93,7 @@ const updateComment = async (req, res, next) => {
         }
 
         // 댓글 작성자 검증
-        if (existingComment.user_id !== userId) {
+        if (existingComment.user_id !== user.user_id) {
             res.status(403).json({
                 message: '권한이 없습니다.',
             });
@@ -147,13 +147,13 @@ const deleteComment = async (req, res, next) => {
     const { commentId } = req.params;
 
     // 세션 검증
-    if (!req.session.user) {
+    const { user } = req;
+    if (!user || !user.user_id) {
         res.status(401).json({
             message: '로그인이 필요합니다.',
         });
         return;
     }
-    const userId = req.session.user.user_id;
 
     try {
         const comment = await commentModel.getCommentById(commentId);
@@ -165,7 +165,7 @@ const deleteComment = async (req, res, next) => {
         }
 
         // 댓글 작성자 검증
-        if (comment.user_id !== userId) {
+        if (comment.user_id !== user.user_id) {
             res.status(403).json({
                 message: '권한이 없습니다.',
             });
