@@ -22,7 +22,13 @@ jobs:
 
             - name: Docker 이미지 빌드 및 푸시
               run: |
-                  docker buildx build --platform linux/amd64 -t 180294215847.dkr.ecr.ap-northeast-2.amazonaws.com/dylan-app:latest . --push
+                  docker build -t 180294215847.dkr.ecr.ap-northeast-2.amazonaws.com/dylan-app:latest .
+                  docker push 180294215847.dkr.ecr.ap-northeast-2.amazonaws.com/dylan-app:latest
+
+            - name: EC2에 SSH 키 등록
+              run: |
+                  echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ec2_key.pem
+                  chmod 600 ec2_key.pem
 
             - name: EC2에서 배포 스크립트 실행
               run: |
