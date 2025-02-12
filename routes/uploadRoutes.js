@@ -10,7 +10,7 @@ const s3 = new AWS.S3({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
-// ✅ **Presigned URL 생성 API**
+// **Presigned URL 생성 API**
 router.get('/generate-presigned-url', async (req, res) => {
     const { fileName, fileType, category } = req.query;
 

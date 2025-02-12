@@ -2,7 +2,6 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const { authenticateToken } = require('./utils/jwt');
 const errorHandler = require('./middlewares/errorHandler');
 const authRouter = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -18,6 +17,8 @@ if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.JWT_SECRET) {
     console.error('환경 변수 설정이 올바르지 않습니다. 서버를 종료합니다.');
     process.exit(1);
 }
+
+app.set('trust proxy', true);
 
 // 미들웨어 설정
 app.use(express.json());
@@ -52,17 +53,8 @@ apiRouter.use('/posts', postRoutes); // 게시물 관련 API
 apiRouter.use('/comments', commentRoutes); // 댓글 관련 API
 apiRouter.use('/upload', uploadRoutes); // 업로드 관련 API
 
-apiRouter.get('/test', (req, res) => {
-    res.status(200).json({ message: 'Server is running' });
-});
-
-// 보호된 라우트 예시
-apiRouter.get('/protected', authenticateToken, (req, res) => {
-    res.json({ message: 'This is a protected route', user: req.user });
-});
-
 app.use((req, res, next) => {
-    console.log(`📌 요청됨: ${req.method} ${req.originalUrl}`);
+    console.log(`요청됨: ${req.method} ${req.originalUrl}`);
     next();
 });
 

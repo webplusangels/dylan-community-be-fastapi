@@ -85,11 +85,7 @@ const getPaginatedComments = async (postId, limit, firstCreatedAt) => {
             WHERE comments.post_id = ? AND comments.created_at < ?
             LIMIT ?`;
 
-        const rows = await query(sql, [
-            postId,
-            formatDate(firstCreatedAt),
-            limit,
-        ]);
+        const rows = await query(sql, [postId, firstCreatedAt, limit]);
         return rows;
     } catch (error) {
         console.error('댓글 데이터 조회 오류:', error.message);
