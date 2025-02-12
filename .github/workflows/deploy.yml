@@ -32,6 +32,4 @@ jobs:
 
             - name: EC2에서 배포 스크립트 실행
               run: |
-                  ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
-                    bash /home/ubuntu/deploy_ecr.sh
-                  EOF
+                  ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} "bash /home/ubuntu/deploy_ecr.sh"
