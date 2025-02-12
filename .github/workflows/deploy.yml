@@ -12,15 +12,13 @@ jobs:
             - name: Checkout 코드
               uses: actions/checkout@v3
 
-            - name: AWS 로그인
-              run: |
-                  aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-                  aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-                  aws configure set default.region ap-northeast-2
-
             - name: ECR 로그인
+              env:
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+                  AWS_REGION: ap-northeast-2
               run: |
-                  aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.ap-northeast-2.amazonaws.com
+                  aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 180294215847.dkr.ecr.ap-northeast-2.amazonaws.com
 
             - name: Docker 이미지 빌드 및 푸시
               run: |
