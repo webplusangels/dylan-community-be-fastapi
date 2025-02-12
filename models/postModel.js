@@ -173,7 +173,6 @@ const updatePostViewById = async (id) => {
             WHERE post_id = ?
         `;
         await query(sql, [newViews, id]);
-        return { ...existingPost, views: newViews };
     } catch (error) {
         console.error('포스트 조회수 정보 업데이트 오류:', error.message);
         throw error;
