@@ -1,0 +1,33 @@
+name: Deploy to AWS ECR & EC2
+
+on:
+    push:
+        branches:
+            - main # main 브랜치에 push될 때 실행
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout 코드
+              uses: actions/checkout@v3
+
+            - name: AWS 로그인
+              run:
+                  aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+                  aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
+                  aws configure set default.region ap-northeast-2
+
+            - name: ECR 로그인
+              run: |
+                  aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.ap-northeast-2.amazonaws.com
+
+            - name: Docker 이미지 빌드 및 푸시
+              run: |
+                  docker buildx build --platform linux/amd64 -t 180294215847.dkr.ecr.ap-northeast-2.amazonaws.com/dylan-app:latest . --push
+
+            - name: EC2에서 배포 스크립트 실행
+              run: |
+                  ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
+                    bash /home/ubuntu/deploy_ecr.sh
+                  EOF
