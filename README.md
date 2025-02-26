@@ -6,7 +6,7 @@
 
 '낯가리는 사람들'은 낯가리는 수많은 내향인들을 위한 커뮤니티입니다!
 
-> 개발 기간 : 2024.11 ~ <br/>
+> 개발 기간 : 2024.11 ~ 2025.2<br/>
 > 개인 프로젝트<br/>
 > URL: http://dylan-web-app-bucket.s3-website.ap-northeast-2.amazonaws.com/login
 
@@ -22,3 +22,10 @@
 
 ### 시연 영상
 
+[![Video](https://github.com/user-attachments/assets/dde71ff1-8b25-4f25-a045-ad1a6c8f7740)](https://drive.google.com/file/d/1A8YiR0NgGE1wewpjMH1udUsXipLmZTcJ/view?usp=sharing)
+
+### 프로젝트 상세
+
+ERD
+API 문서
+상태관리
