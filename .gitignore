@@ -41,4 +41,9 @@ data/
 
 # User uploaded files
 uploads/*
-!uploads/.gitkeep
+!uploads/.gitkeepvenv/
+
+# Python files
+venv/
+__pycache__/
+*.pyc
