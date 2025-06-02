@@ -1,49 +1,47 @@
-# Node modules (if using Node.js)
-node_modules/
+# ...existing code...
+
+# Poetry
+poetry.lock
+.venv/
+
+# FastAPI/Uvicorn
+.pytest_cache/
+.coverage
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
-logs
+logs/
 *.log
-npm-debug.log*
 
-# OS-specific files
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# VSCode settings
+# VS Code
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-# Build outputs
-dist/
-build/
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.swp
-*.swo
-*.orig
-
-# Compiled files
-*.css.map
-*.js.map
-
-# Backup files
-*~
-*.bak
+# Uploads (if you have file uploads)
+uploads/
+media/
+static/uploads/
 
 # Environment variables
-.env
+.env.local
+*.local
 
-# Temporal data
-data/
-
-# User uploaded files
-uploads/*
-!uploads/.gitkeepvenv/
-
-# Python files
-venv/
-__pycache__/
-*.pyc
+# Temporary files
+tmp/
+temp/
