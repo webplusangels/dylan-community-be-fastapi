@@ -25,7 +25,7 @@
 
 [![Video](https://github.com/user-attachments/assets/dde71ff1-8b25-4f25-a045-ad1a6c8f7740)](https://drive.google.com/file/d/1A8YiR0NgGE1wewpjMH1udUsXipLmZTcJ/view?usp=sharing) -->
 
-### 프로젝트 구조
+### 예상 프로젝트 구조
 
 ```
 project/
