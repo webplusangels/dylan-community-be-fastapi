@@ -1,12 +1,6 @@
-from dotenv import load_dotenv
-
-# from src.users.router import router as users_router
-
-# 환경 변수 로드
-load_dotenv(dotenv_path=".env.local", override=True)
-
 from fastapi import FastAPI
 
+# from src.users.router import router as users_router
 # from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
 
