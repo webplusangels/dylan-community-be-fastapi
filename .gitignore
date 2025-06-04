@@ -39,9 +39,14 @@ media/
 static/uploads/
 
 # Environment variables
+.env
 .env.local
 *.local
 
 # Temporary files
 tmp/
 temp/
+
+# pycache
+__pycache__/
+*.pyc
