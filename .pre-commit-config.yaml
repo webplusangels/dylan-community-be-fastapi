@@ -16,3 +16,14 @@ repos:
       - id: ruff
         args: [--fix] # 자동 수정
       - id: ruff-format # 코드 포맷팅 (Black 대체)
+
+  # 마지막에 타입 검사 (코드 수정 후)
+  - repo: local
+    hooks:
+      - id: pyrefly
+        name: Pyrefly Type Check
+        entry: poetry run pyrefly check
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+        stages: [commit] # commit 시에만 실행
