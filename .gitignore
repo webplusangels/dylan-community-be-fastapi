@@ -50,3 +50,6 @@ temp/
 # pycache
 __pycache__/
 *.pyc
+
+# pyrefly
+pyrefly.toml
