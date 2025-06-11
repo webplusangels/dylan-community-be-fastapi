@@ -1,9 +1,17 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field
 
 
-class UserBase(BaseModel):
+class AppBaseModel(BaseModel):
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        validate_assignment=True,
+        extra="forbid",
+    )
+
+
+class UserBase(AppBaseModel):
     """
     사용자의 기본 속성을 정의하는 모델
     다른 스키마들이 상속받아 사용할 수 있는 클래스
@@ -22,21 +30,14 @@ class UserBase(BaseModel):
         description="사용자명 (3-50자, 영문 대소문자, 숫자, 밑줄(_)만 허용)",
         examples=["user123", "test_user", "example_user"],
     )
-    profile_image_path: str | None = Field(
+    profile_image_path: AnyHttpUrl | None = Field(
         None,
         max_length=255,
-        pattern=r"^https?://.*\.(jpg|jpeg|png|gif|webp)$",
         description="프로필 이미지 URL",
         examples=[
             "https://example.com/images/profile.jpg",
             "https://example.com/images/avatar.png",
         ],
-    )
-
-    model_config = ConfigDict(
-        str_strip_whitespace=True,  # 문자열 공백 제거
-        validate_assignment=True,  # 할당 시 유효성 검사
-        extra="forbid",  # 정의되지 않은 필드는 허용하지 않음
     )
 
 
@@ -57,7 +58,7 @@ class UserCreate(UserBase):
     )
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(AppBaseModel):
     """
     사용자 업데이트를 위한 스키마
     UserBase를 상속받아 일부 필드를 선택적으로 업데이트할 수 있도록 정의
@@ -71,10 +72,9 @@ class UserUpdate(BaseModel):
         description="사용자명 (3-50자, 영문 대소문자, 숫자, 밑줄(_)만 허용)",
         examples=["new_user123", "updated_user"],
     )
-    profile_image_path: str | None = Field(
+    profile_image_path: AnyHttpUrl | None = Field(
         None,
         max_length=255,
-        pattern=r"^https?://.*\.(jpg|jpeg|png|gif|webp)$",
         description="프로필 이미지 URL",
         examples=[
             "https://example.com/images/new_profile.jpg",
@@ -83,7 +83,7 @@ class UserUpdate(BaseModel):
     )
 
 
-class UserUpdatePassword(BaseModel):
+class UserUpdatePassword(AppBaseModel):
     """
     사용자 비밀번호 업데이트를 위한 스키마
     기존 비밀번호와 새 비밀번호를 받기 위한 모델
@@ -91,11 +91,7 @@ class UserUpdatePassword(BaseModel):
 
     current_password: str = Field(
         ...,
-        min_length=8,
-        max_length=128,
-        pattern=r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,128}$",
         description="현재 비밀번호 (8-128자)",
-        examples=["currentPassword123", "OldPassword!@#456"],
     )
     new_password: str = Field(
         ...,
@@ -104,12 +100,6 @@ class UserUpdatePassword(BaseModel):
         pattern=r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,128}$",
         description="새 비밀번호 (8-128자)",
         examples=["newPassword123", "NewSecure!@#789"],
-    )
-
-    model_config = ConfigDict(
-        str_strip_whitespace=True,  # 문자열 공백 제거
-        validate_assignment=True,  # 할당 시 유효성 검사
-        extra="forbid",  # 정의되지 않은 필드는 허용하지 않음
     )
 
 
@@ -125,7 +115,7 @@ class UserRead(UserBase):
         examples=["123e4567-e89b-12d3-a456-426614174000"],
     )
     is_active: bool = Field(
-        True,
+        ...,
         description="사용자 활성화 상태",
         examples=[True, False],
     )
@@ -142,9 +132,7 @@ class UserRead(UserBase):
 
     model_config = ConfigDict(
         from_attributes=True,  # 속성에서 모델로 변환 가능
-        str_strip_whitespace=True,
-        validate_assignment=True,
-        extra="forbid",
+        validate_assignment=False,  # 명시적으로 False로 오버라이드
     )
 
 
@@ -155,7 +143,7 @@ class UserProfile(BaseModel):
     """
 
     username: str = Field(..., description="사용자명")
-    profile_image_path: str | None = Field(None, description="프로필 이미지 URL")
+    profile_image_path: AnyHttpUrl | None = Field(None, description="프로필 이미지 URL")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -189,7 +177,6 @@ class Token(BaseModel):
     token_type: str = Field("bearer", description="토큰 타입", examples=["bearer"])
 
     model_config = ConfigDict(
-        str_strip_whitespace=True,  # 문자열 공백 제거
         validate_assignment=True,  # 할당 시 유효성 검사
         extra="forbid",  # 정의되지 않은 필드는 허용하지 않음
     )
@@ -213,7 +200,6 @@ class TokenData(BaseModel):
     )
 
     model_config = ConfigDict(
-        str_strip_whitespace=True,  # 문자열 공백 제거
         validate_assignment=True,  # 할당 시 유효성 검사
         extra="forbid",  # 정의되지 않은 필드는 허용하지 않음
     )
