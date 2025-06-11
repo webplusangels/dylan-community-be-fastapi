@@ -2,13 +2,7 @@ from datetime import datetime
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field
 
-
-class AppBaseModel(BaseModel):
-    model_config = ConfigDict(
-        str_strip_whitespace=True,
-        validate_assignment=True,
-        extra="forbid",
-    )
+from src.common.schemas import AppBaseModel
 
 
 class UserBase(AppBaseModel):
