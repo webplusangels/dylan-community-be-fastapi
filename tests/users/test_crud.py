@@ -1,4 +1,4 @@
-from time import sleep
+import asyncio
 
 import pytest
 from fastapi import HTTPException
@@ -197,7 +197,7 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
     before_updated_at = user_fixture.updated_at
 
     # Act
-    sleep(0.1)
+    await asyncio.sleep(0.1)
     updated = await crud.update_user(
         db=db_session, db_user=user_fixture, user_update=update
     )
@@ -211,6 +211,7 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
     # profile_image_path가 None인 경우 업데이트 테스트
     # Arrange 2
     update_2 = UserUpdate(profile_image_path=None)
+    before_updated_at_2 = user_fixture.updated_at
 
     # Act 2
     updated_2 = await crud.update_user(
@@ -219,6 +220,7 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
 
     # Assert 2
     assert updated_2.profile_image_path is None
+    assert updated_2.updated_at > before_updated_at_2
 
 
 @pytest.mark.asyncio
