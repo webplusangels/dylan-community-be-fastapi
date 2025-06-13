@@ -1,6 +1,7 @@
 from typing import AsyncGenerator, Generator
 
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import StaticPool
@@ -11,6 +12,11 @@ from src.db.session import get_async_db
 
 # pytest를 위한 애플리케이션 및 설정 관련 모듈
 from src.main import app
+
+# 사용자 모델 및 CRUD 관련 모듈
+from src.users.crud import create_user
+from src.users.models import User
+from src.users.schemas import UserCreate
 
 # 테스트용 데이터베이스 엔진 생성
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -28,7 +34,6 @@ TestAsyncSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
 )
-
 
 # TestClient 설정
 
@@ -82,3 +87,23 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     finally:
         await async_session.close()
         app.dependency_overrides.pop(get_async_db, None)
+
+
+# User 객체를 생성하는 fixture
+@pytest_asyncio.fixture
+async def user_fixture(db_session: AsyncSession) -> User:
+    """
+    테스트용 사용자 객체를 생성합니다.
+    기본값을 사용하거나, 원하는 값으로 생성할 수 있습니다.
+    """
+    user_in = UserCreate(
+        email="test@example.com",
+        username="testuser",
+        password="password123",
+    )
+    hashed_password = "hashed_password"
+    created_user = await create_user(
+        db=db_session, user_in=user_in, hashed_password=hashed_password
+    )
+
+    return created_user
