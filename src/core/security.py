@@ -19,6 +19,7 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     주어진 평문 비밀번호와 해싱된 비밀번호를 비교해 일치 여부를 반환합니다
+
     :param plain_password: 평문 비밀번호
     :param hashed_password: 해싱된 비밀번호
     :return: 비밀번호가 일치하면 True, 그렇지 않으면 False
