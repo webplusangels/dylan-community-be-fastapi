@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Sequence
 
 from fastapi import HTTPException
@@ -91,7 +92,10 @@ async def get_users(
     :param limit: 조회할 최대 사용자 수
     :return: 사용자 모델 리스트
     """
-    result = await db.execute(select(User).offset(skip).limit(limit))
+    result = await db.execute(
+        select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
+    )
+
     return result.scalars().all()
 
 
@@ -103,20 +107,19 @@ async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) 
     :param db_user: 업데이트할 사용자 모델
     :param user_update: 사용자 업데이트 스키마
     :return: 업데이트된 사용자 모델
-    :raises HTTPException: 이메일 또는 사용자 이름이 이미 존재하는 경우
+    :raises HTTPException: 사용자 이름이 이미 존재하는 경우
     """
     update_data = user_update.model_dump(exclude_unset=True)
+    is_updated = False
+
     for key, value in update_data.items():
-        # profile_image_path는 None도 허용
-        if key == "profile_image_path":
-            if getattr(db_user, key) != str(value):
-                setattr(db_user, key, str(value) if value else None)
-        else:
-            if value is not None and getattr(db_user, key) != value:
-                setattr(db_user, key, value)
+        if getattr(db_user, key) != value:
+            setattr(db_user, key, value)
+            is_updated = True
 
     # 변경된 내용이 있는 경우에만 커밋
-    if db.is_modified(db_user):
+    if is_updated:
+        db_user.updated_at = datetime.now()
         try:
             return await _commit_and_refresh(db, db_user)
         except IntegrityError as err:
