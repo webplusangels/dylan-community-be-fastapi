@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Sequence
 
 from fastapi import HTTPException
@@ -56,9 +56,7 @@ async def create_user(
         email=user_in.email,
         username=user_in.username,
         hashed_password=hashed_password,
-        profile_image_path=str(user_in.profile_image_path)
-        if user_in.profile_image_path
-        else None,
+        profile_image_path=user_in.profile_image_path,
     )
     db.add(db_user)
     try:
@@ -119,7 +117,7 @@ async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) 
 
     # 변경된 내용이 있는 경우에만 커밋
     if is_updated:
-        db_user.updated_at = datetime.now()
+        db_user.updated_at = datetime.now(UTC)
         try:
             return await _commit_and_refresh(db, db_user)
         except IntegrityError as err:
@@ -142,6 +140,7 @@ async def deactivate_user(db: AsyncSession, db_user: User) -> User:
     """
     if db_user.is_active:
         db_user.is_active = False
+        db_user.updated_at = datetime.now(UTC)
         try:
             return await _commit_and_refresh(db, db_user)
         except Exception as err:
@@ -188,6 +187,7 @@ async def update_admin_status(db: AsyncSession, db_user: User, is_admin: bool) -
     """
     if db_user.is_admin != is_admin:
         db_user.is_admin = is_admin
+        db_user.updated_at = datetime.now(UTC)
         try:
             return await _commit_and_refresh(db, db_user)
         except Exception as err:
@@ -211,6 +211,7 @@ async def update_password(
     :raises HTTPException: 비밀번호 업데이트 중 오류가 발생한 경우
     """
     db_user.hashed_password = new_hashed_password
+    db_user.updated_at = datetime.now(UTC)
     try:
         return await _commit_and_refresh(db, db_user)
     except Exception as err:
