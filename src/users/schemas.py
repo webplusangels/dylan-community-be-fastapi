@@ -1,6 +1,14 @@
 from datetime import datetime
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_serializer,
+    field_validator,
+)
 
 from src.common.schemas import AppBaseModel
 
@@ -89,6 +97,15 @@ class UserUpdate(AppBaseModel):
             "https://example.com/images/new_avatar.png",
         ],
     )
+
+    @field_serializer("profile_image_path")
+    def serialize_profile_image_path(self, url: AnyHttpUrl | None, _info) -> str | None:
+        """
+        프로필 이미지 URL의 타입인 AnyHttpUrl 객체를 str으로 변환해 반환
+        """
+        if url:
+            return str(url)
+        return None
 
 
 class UserUpdatePassword(AppBaseModel):
