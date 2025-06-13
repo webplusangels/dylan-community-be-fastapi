@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -31,8 +31,10 @@ TestAsyncSessionLocal = async_sessionmaker(
 
 
 # TestClient 설정
+
+
 @pytest.fixture(scope="session")
-def client() -> TestClient:
+def client() -> Generator[TestClient, None, None]:
     """
     동기식 API 요청을 위한 TestClient 인스턴스를 제공합니다.
     """
@@ -61,6 +63,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     # 테스트용 테이블 생성
     async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     # 테스트용 세션 생성
