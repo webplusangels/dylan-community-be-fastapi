@@ -55,7 +55,9 @@ async def create_user(
         email=user_in.email,
         username=user_in.username,
         hashed_password=hashed_password,
-        profile_image_path=user_in.profile_image_path,
+        profile_image_path=str(user_in.profile_image_path)
+        if user_in.profile_image_path
+        else None,
     )
     db.add(db_user)
     try:
@@ -107,8 +109,8 @@ async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) 
     for key, value in update_data.items():
         # profile_image_path는 None도 허용
         if key == "profile_image_path":
-            if getattr(db_user, key) != value:
-                setattr(db_user, key, value)
+            if getattr(db_user, key) != str(value):
+                setattr(db_user, key, str(value) if value else None)
         else:
             if value is not None and getattr(db_user, key) != value:
                 setattr(db_user, key, value)
