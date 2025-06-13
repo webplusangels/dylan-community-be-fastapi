@@ -13,6 +13,7 @@ class User(Base):
     hashed_password: Mapped[str]
     profile_image_path: Mapped[str | None]
     is_active: Mapped[bool]
+    is_admin: Mapped[bool]
     created_at: Mapped[datetime]
     updated_at: Mapped[datetime]
 

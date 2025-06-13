@@ -1,8 +1,26 @@
 from datetime import datetime
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, EmailStr, Field
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_serializer,
+    field_validator,
+)
 
 from src.common.schemas import AppBaseModel
+
+
+def validate_password(value: str) -> str:
+    """
+    비밀번호 유효성 검사 함수
+    영문 대소문자, 숫자 조합을 요구
+    """
+    if not any(c.isalpha() for c in value) or not any(c.isdigit() for c in value):
+        raise ValueError("비밀번호는 영문과 숫자를 포함해야 합니다.")
+    return value
 
 
 class UserBase(AppBaseModel):
@@ -46,10 +64,14 @@ class UserCreate(UserBase):
         ...,
         min_length=8,
         max_length=128,
-        pattern=r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,128}$",  # 최소 8자, 영문+숫자 조합
         description="사용자 비밀번호 (8-128자)",
         examples=["password123", "securePassword!@#1234"],
     )
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 class UserUpdate(AppBaseModel):
@@ -76,6 +98,15 @@ class UserUpdate(AppBaseModel):
         ],
     )
 
+    @field_serializer("profile_image_path")
+    def serialize_profile_image_path(self, url: AnyHttpUrl | None, _info) -> str | None:
+        """
+        프로필 이미지 URL의 타입인 AnyHttpUrl 객체를 str으로 변환해 반환
+        """
+        if url:
+            return str(url)
+        return None
+
 
 class UserUpdatePassword(AppBaseModel):
     """
@@ -91,10 +122,14 @@ class UserUpdatePassword(AppBaseModel):
         ...,
         min_length=8,
         max_length=128,
-        pattern=r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,128}$",
         description="새 비밀번호 (8-128자)",
         examples=["newPassword123", "NewSecure!@#789"],
     )
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 class UserRead(UserBase):
