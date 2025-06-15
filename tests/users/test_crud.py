@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -123,6 +121,37 @@ async def test_get_user_by_email_not_found(db_session: AsyncSession):
 
 
 @pytest.mark.asyncio
+async def test_get_user_by_username(db_session: AsyncSession, user_fixture: User):
+    """
+    사용자 이름으로 사용자 조회 테스트
+    """
+    # Act
+    retrieved_user = await crud.get_user_by_username(
+        db=db_session, username=user_fixture.username
+    )
+
+    # Assert
+    assert retrieved_user is not None
+    assert retrieved_user.id == user_fixture.id
+    assert retrieved_user.email == user_fixture.email
+    assert retrieved_user.username == user_fixture.username
+
+
+@pytest.mark.asyncio
+async def test_get_user_by_username_not_found(db_session: AsyncSession):
+    """
+    존재하지 않는 사용자 이름으로 사용자 조회 테스트
+    """
+    # Act
+    non_existing_user = await crud.get_user_by_username(
+        db=db_session, username="nonexistentuser"
+    )
+
+    # Assert
+    assert non_existing_user is None
+
+
+@pytest.mark.asyncio
 async def test_get_user_by_id(db_session: AsyncSession, user_fixture: User):
     """
     사용자 ID로 사용자 조회 테스트
@@ -154,7 +183,7 @@ async def test_get_users(db_session: AsyncSession):
     사용자 목록 조회 테스트 (기본 케이스 + 페이징)
     """
     # Arrange
-    hashed_password = "fakehashedpassword"
+    hashed_password = "hashed_password"
     test_users = []
 
     for i in range(5):
@@ -194,10 +223,8 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
     update = UserUpdate(
         username="testuser_updated", profile_image_path="https://example.com/img.png"
     )
-    before_updated_at = user_fixture.updated_at
 
     # Act
-    await asyncio.sleep(0.1)
     updated = await crud.update_user(
         db=db_session, db_user=user_fixture, user_update=update
     )
@@ -205,13 +232,11 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
     # Assert
     assert updated.username == "testuser_updated"
     assert updated.profile_image_path == "https://example.com/img.png"
-    assert updated.updated_at > before_updated_at
     assert type(updated.profile_image_path) is str
 
     # profile_image_path가 None인 경우 업데이트 테스트
     # Arrange 2
     update_2 = UserUpdate(profile_image_path=None)
-    before_updated_at_2 = user_fixture.updated_at
 
     # Act 2
     updated_2 = await crud.update_user(
@@ -220,7 +245,6 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
 
     # Assert 2
     assert updated_2.profile_image_path is None
-    assert updated_2.updated_at > before_updated_at_2
 
 
 @pytest.mark.asyncio
@@ -235,7 +259,7 @@ async def test_update_user_duplicate_username(db_session: AsyncSession):
     user2 = UserCreate(
         email="test2@example.com", username="user2", password="password123"
     )
-    hashed_password = "fakehashedpassword"
+    hashed_password = "hashed_password"
 
     await crud.create_user(
         db=db_session, user_in=user1, hashed_password=hashed_password
@@ -310,7 +334,7 @@ async def test_update_password(db_session: AsyncSession, user_fixture: User):
     # Act
     new_hashed = "newhashedpassword"
     updated = await crud.update_password(
-        db=db_session, db_user=user_fixture, new_hashed_password=new_hashed
+        db=db_session, db_user=user_fixture, hashed_password=new_hashed
     )
 
     # Assert

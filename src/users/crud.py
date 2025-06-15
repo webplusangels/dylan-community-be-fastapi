@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from typing import Sequence
 
 from fastapi import HTTPException
@@ -26,18 +25,6 @@ async def _commit_and_refresh(db: AsyncSession, instance: User) -> User:
     except Exception:
         await db.rollback()
         raise  # 호출자가 구체적인 예외 처리
-
-
-async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    """
-    이메일로 사용자를 조회합니다.
-
-    :param db: 비동기 데이터베이스 세션
-    :param email: 조회할 사용자 이메일
-    :return: 사용자 모델 또는 None
-    """
-    result = await db.execute(select(User).where(User.email == email))
-    return result.scalars().first()
 
 
 async def create_user(
@@ -79,6 +66,30 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     return await db.get(User, user_id)
 
 
+async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
+    """
+    이메일로 사용자를 조회합니다.
+
+    :param db: 비동기 데이터베이스 세션
+    :param email: 조회할 사용자 이메일
+    :return: 사용자 모델 또는 None
+    """
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalars().first()
+
+
+async def get_user_by_username(db: AsyncSession, username: str) -> User | None:
+    """
+    사용자 이름으로 사용자를 조회합니다.
+
+    :param db: 비동기 데이터베이스 세션
+    :param username: 조회할 사용자 이름
+    :return: 사용자 모델 또는 None
+    """
+    result = await db.execute(select(User).where(User.username == username))
+    return result.scalars().first()
+
+
 async def get_users(
     db: AsyncSession, skip: int = 0, limit: int = 100
 ) -> Sequence[User]:
@@ -117,7 +128,6 @@ async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) 
 
     # 변경된 내용이 있는 경우에만 커밋
     if is_updated:
-        db_user.updated_at = datetime.now(UTC)
         try:
             return await _commit_and_refresh(db, db_user)
         except IntegrityError as err:
@@ -140,7 +150,6 @@ async def deactivate_user(db: AsyncSession, db_user: User) -> User:
     """
     if db_user.is_active:
         db_user.is_active = False
-        db_user.updated_at = datetime.now(UTC)
         try:
             return await _commit_and_refresh(db, db_user)
         except Exception as err:
@@ -187,7 +196,6 @@ async def update_admin_status(db: AsyncSession, db_user: User, is_admin: bool) -
     """
     if db_user.is_admin != is_admin:
         db_user.is_admin = is_admin
-        db_user.updated_at = datetime.now(UTC)
         try:
             return await _commit_and_refresh(db, db_user)
         except Exception as err:
@@ -199,19 +207,18 @@ async def update_admin_status(db: AsyncSession, db_user: User, is_admin: bool) -
 
 
 async def update_password(
-    db: AsyncSession, db_user: User, new_hashed_password: str
+    db: AsyncSession, db_user: User, hashed_password: str
 ) -> User:
     """
     사용자의 비밀번호를 업데이트합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param db_user: 업데이트할 사용자 모델
-    :param new_hashed_password: 새로운 해시된 비밀번호
+    :param hashed_password: 새로운 해시된 비밀번호
     :return: 업데이트된 사용자 모델
     :raises HTTPException: 비밀번호 업데이트 중 오류가 발생한 경우
     """
-    db_user.hashed_password = new_hashed_password
-    db_user.updated_at = datetime.now(UTC)
+    db_user.hashed_password = hashed_password
     try:
         return await _commit_and_refresh(db, db_user)
     except Exception as err:
