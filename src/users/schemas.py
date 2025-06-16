@@ -17,7 +17,7 @@ def validate_password(value: str) -> str:
     비밀번호 유효성 검사 함수
     영문 대소문자, 숫자 조합을 요구
     """
-    if not any(c.isalpha() for c in value) and not any(c.isdigit() for c in value):
+    if not any(c.isalpha() for c in value) or not any(c.isdigit() for c in value):
         raise ValueError("비밀번호는 영문과 숫자를 포함해야 합니다.")
     return value
 
