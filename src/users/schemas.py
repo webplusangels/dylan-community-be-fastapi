@@ -6,7 +6,6 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
-    field_serializer,
     field_validator,
 )
 
@@ -18,7 +17,7 @@ def validate_password(value: str) -> str:
     비밀번호 유효성 검사 함수
     영문 대소문자, 숫자 조합을 요구
     """
-    if not any(c.isalpha() for c in value) or not any(c.isdigit() for c in value):
+    if not any(c.isalpha() for c in value) and not any(c.isdigit() for c in value):
         raise ValueError("비밀번호는 영문과 숫자를 포함해야 합니다.")
     return value
 
@@ -98,14 +97,14 @@ class UserUpdate(AppBaseModel):
         ],
     )
 
-    @field_serializer("profile_image_path")
-    def serialize_profile_image_path(self, url: AnyHttpUrl | None, _info) -> str | None:
-        """
-        프로필 이미지 URL의 타입인 AnyHttpUrl 객체를 str으로 변환해 반환
-        """
-        if url:
-            return str(url)
-        return None
+    # @field_serializer("profile_image_path")
+    # def serialize_profile_image_path(self, url: AnyHttpUrl | None, _info) -> str | None:
+    #     """
+    #     프로필 이미지 URL의 타입인 AnyHttpUrl 객체를 str으로 변환해 반환
+    #     """
+    #     if url:
+    #         return str(url)
+    #     return None
 
 
 class UserUpdatePassword(AppBaseModel):
@@ -190,6 +189,19 @@ class UserInDB(UserRead):
         ...,
         description="해시된 사용자 비밀번호",
         examples=["$2b$12$eImiTMZG4TQ1mZ9j5a5eOe"],
+    )
+
+
+class UserUpdateAdmin(AppBaseModel):
+    """
+    관리자 권한 업데이트를 위한 스키마
+    관리자가 사용자의 관리자 권한을 업데이트할 때 사용
+    """
+
+    is_admin: bool = Field(
+        ...,
+        description="사용자의 관리자 권한 상태",
+        examples=[True, False],
     )
 
 
