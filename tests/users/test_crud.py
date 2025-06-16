@@ -308,22 +308,10 @@ async def test_delete_user_success(db_session: AsyncSession, user_fixture: User)
     사용자 삭제 테스트
     """
     # Act
-    result = await crud.delete_user(db=db_session, user_id=user_fixture.id)
+    result = await crud.delete_user(db=db_session, db_user=user_fixture)
 
     # Assert
     assert result is True
-
-
-@pytest.mark.asyncio
-async def test_delete_user_not_found(db_session: AsyncSession):
-    """
-    존재하지 않는 사용자 삭제 테스트
-    """
-    # Act
-    result = await crud.delete_user(db=db_session, user_id="nonexistent-id")
-
-    # Assert
-    assert result is False
 
 
 @pytest.mark.asyncio

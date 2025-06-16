@@ -118,7 +118,7 @@ async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) 
     :return: 업데이트된 사용자 모델
     :raises HTTPException: 사용자 이름이 이미 존재하는 경우
     """
-    update_data = user_update.model_dump(exclude_unset=True)
+    update_data = user_update.model_dump(mode="json", exclude_unset=True)
     is_updated = False
 
     for key, value in update_data.items():
@@ -160,21 +160,17 @@ async def deactivate_user(db: AsyncSession, db_user: User) -> User:
     return db_user
 
 
-async def delete_user(db: AsyncSession, user_id: str) -> bool:
+async def delete_user(db: AsyncSession, db_user: User) -> bool:
     """
     사용자를 데이터베이스에서 물리적으로 삭제합니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param user_id: 삭제할 사용자 ID
+    :param db_user: 삭제할 사용자 모델
     :return: 성공 시 True, 대상이 없을 시 False
     :raises HTTPException: 삭제 중 무결성 오류가 발생한 경우
     """
-    user_to_delete = await db.get(User, user_id)
-    if not user_to_delete:
-        return False
-
     try:
-        await db.delete(user_to_delete)
+        await db.delete(db_user)
         await db.commit()
         return True
     except IntegrityError as err:

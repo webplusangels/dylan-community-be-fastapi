@@ -204,7 +204,6 @@ async def test_get_user_profile_success(mocker):
     사용자 프로필 조회 성공 테스트
     """
     # Arrange
-    mock_db = AsyncMock()
     test_user = models.User(
         id="uuid",
     )
@@ -212,7 +211,7 @@ async def test_get_user_profile_success(mocker):
     mocker.patch("src.users.crud.get_user", return_value=test_user)
 
     # Act
-    user_profile = await service.get_user_profile(db=mock_db, db_user=test_user)
+    user_profile = await service.get_user_profile(db_user=test_user)
 
     # Assert
     assert user_profile is not None
@@ -344,7 +343,7 @@ async def test_delete_user_success(mocker):
     await service.delete_user(db=mock_db, db_user=db_user)
 
     # Assert
-    mock_crud_delete_user.assert_called_once_with(db=mock_db, user_id=db_user.id)
+    mock_crud_delete_user.assert_called_once_with(db=mock_db, db_user=db_user)
 
 
 @pytest.mark.asyncio
