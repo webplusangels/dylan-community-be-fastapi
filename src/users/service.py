@@ -75,8 +75,7 @@ async def get_user_profile(db_user: models.User) -> models.User:
     """
     사용자 ID로 사용자의 프로필을 조회합니다.
 
-    :param db: 비동기 데이터베이스 세션
-    :param user_id: 조회할 사용자 ID
+    :param db_user: 데이터베이스에서 조회된 사용자 모델
     :return: 사용자 모델
     """
     return db_user
