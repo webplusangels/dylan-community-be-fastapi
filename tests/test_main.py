@@ -94,8 +94,8 @@ async def test_health_check_database_type_extraction(async_client: AsyncClient):
     db_url = data["database_url"]
     if "://" in db_url:
         extracted_type = db_url.split("://")[0]
-        if settings.database_url:
-            expected_type = settings.database_url.split("://")[0]
+        if settings.DATABASE_URL:
+            expected_type = settings.DATABASE_URL.split("://")[0]
             assert (
                 extracted_type == expected_type
             ), f"예상 DB 타입 '{expected_type}'과 응답 DB 타입 '{extracted_type}'이 다릅니다."
