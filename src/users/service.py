@@ -1,9 +1,8 @@
-from typing import Sequence, cast
+from typing import Sequence
 
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.security import hash_password, verify_password
+from src.core.security import hash_password
 from src.users import crud, models, schemas
 
 
@@ -27,33 +26,6 @@ async def create_user(db: AsyncSession, user_in: schemas.UserCreate) -> models.U
     )
 
     return created_user
-
-
-async def authenticate_user(
-    db: AsyncSession, email: str, password: str
-) -> models.User | None:
-    """
-    사용자의 이메일과 비밀번호로 인증을 시도합니다.
-
-    :param db: 비동기 데이터베이스 세션
-    :param email: 사용자 이메일
-    :param password: 사용자 비밀번호
-    :return: 인증된 사용자 모델 또는 None
-    """
-    db_user = await crud.get_user_by_email(db=db, email=email)
-    if not db_user:
-        return None
-
-    if not db_user.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="사용자가 비활성화되었습니다.",
-        )
-
-    if not verify_password(password, cast(str, db_user.hashed_password)):
-        return None
-
-    return db_user
 
 
 async def get_all_users(
@@ -108,11 +80,11 @@ async def deactivate_user(db: AsyncSession, db_user: models.User) -> models.User
     :return: 비활성화된 사용자 모델
     """
     # if db_user.id == current_user.id:
-    #     raise HTTPException(status_code=403, detail="자기 자신을 비활성화할 수 없습니다.")
+    #     raise HTTPException(status_code=status.403, detail="자기 자신을 비활성화할 수 없습니다.")
 
     # # 예시: 관리자가 아닌데 다른 사람을 비활하려는 경우
     # if not current_user.is_admin and db_user.id != current_user.id:
-    #     raise HTTPException(status_code=403, detail="다른 사용자를 비활성화할 권한이 없습니다.")
+    #     raise HTTPException(status_code=status.403, detail="다른 사용자를 비활성화할 권한이 없습니다.")
 
     deactivated_user = await crud.deactivate_user(db=db, db_user=db_user)
     return deactivated_user

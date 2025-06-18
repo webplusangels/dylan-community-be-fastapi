@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.dependencies import get_current_active_user
 from src.db.session import get_async_db
 from src.users import models, schemas, service
 
@@ -31,12 +32,31 @@ async def create_user(
     try:
         created_user = await service.create_user(db=db, user_in=user_in)
         return created_user
+    except HTTPException:
+        # 이미 HTTPException이면 그대로 전달
+        raise
     except Exception as e:
         # 예상치 못한 예외 발생 시 500 에러
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="서버에 예상치 못한 오류가 발생했습니다.",
         ) from e
+
+
+@router.get(
+    "/me",
+    response_model=schemas.UserProfile,
+    status_code=status.HTTP_200_OK,
+    summary="내 프로필 조회",
+    description="현재 로그인한 사용자의 프로필 정보를 조회합니다. 성공 시 사용자 프로필 정보를 반환합니다.",
+)
+async def get_my_profile(
+    current_user: Annotated[models.User, Depends(get_current_active_user)],
+) -> models.User:
+    """
+    현재 로그인한 사용자의 프로필 정보를 조회
+    """
+    return current_user
 
 
 # @router.get(
