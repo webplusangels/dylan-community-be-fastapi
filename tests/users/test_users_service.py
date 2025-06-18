@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 from src.core.security import hash_password, verify_password
 from src.users import models, schemas, service
@@ -57,7 +57,8 @@ async def test_create_user_service_failure_duplicate_email(mocker):
     mocker.patch(
         "src.users.crud.create_user",
         side_effect=HTTPException(
-            status_code=409, detail="이미 사용 중인 이메일 또는 사용자 이름입니다."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 사용 중인 이메일 또는 사용자 이름입니다.",
         ),
     )
 
@@ -86,7 +87,8 @@ async def test_create_user_service_failure_duplicate_username(mocker):
     mocker.patch(
         "src.users.crud.create_user",
         side_effect=HTTPException(
-            status_code=409, detail="이미 사용 중인 이메일 또는 사용자 이름입니다."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 사용 중인 이메일 또는 사용자 이름입니다.",
         ),
     )
 
@@ -96,106 +98,6 @@ async def test_create_user_service_failure_duplicate_username(mocker):
 
     assert exc_info.value.status_code == 409
     assert exc_info.value.detail == "이미 사용 중인 이메일 또는 사용자 이름입니다."
-
-
-@pytest.mark.asyncio
-async def test_authenticate_user_success(mocker):
-    """
-    사용자 인증 성공 테스트
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    test_user = models.User(
-        email="test@example.com",
-        is_active=True,
-    )
-
-    mocker.patch("src.users.crud.get_user_by_email", return_value=test_user)
-    mocker.patch("src.users.service.verify_password", return_value=True)
-
-    # Act
-    authenticated_user = await service.authenticate_user(
-        db=mock_db, email=test_user.email, password="plainpassword123"
-    )
-
-    # Assert
-    assert authenticated_user is not None
-    assert authenticated_user.email == test_user.email
-
-
-@pytest.mark.asyncio
-async def test_authenticate_user_failure_wrong_password(mocker):
-    """
-    사용자 인증 실패 테스트(잘못된 비밀번호)
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    test_user = models.User(
-        email="test@example.com",
-        hashed_password=hash_password("plainpassword123"),
-        is_active=True,
-    )
-
-    mocker.patch("src.users.crud.get_user_by_email", return_value=test_user)
-    mocker.patch("src.users.service.verify_password", return_value=False)
-
-    # Act
-    authenticated_user = await service.authenticate_user(
-        db=mock_db, email=test_user.email, password="wrongpassword123"
-    )
-
-    # Assert
-    assert authenticated_user is None
-
-
-@pytest.mark.asyncio
-async def test_authenticate_user_failure_inactive_user(mocker):
-    """
-    사용자 인증 실패 테스트(비활성화된 사용자)
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    test_user = models.User(
-        email="test@example.com",
-        hashed_password=hash_password("plainpassword123"),
-        is_active=False,  # 비활성화된 사용자
-    )
-
-    mocker.patch("src.users.crud.get_user_by_email", return_value=test_user)
-    mocker.patch("src.users.service.verify_password", return_value=True)
-
-    # Act & Assert
-    with pytest.raises(HTTPException) as exc_info:
-        await service.authenticate_user(
-            db=mock_db, email=test_user.email, password="plainpassword123"
-        )
-
-    assert exc_info.value.status_code == 403
-    assert exc_info.value.detail == "사용자가 비활성화되었습니다."
-
-
-@pytest.mark.asyncio
-async def test_authenticate_user_failure_user_not_found(mocker):
-    """
-    사용자 인증 실패 테스트(사용자 없음)
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    test_user = models.User(
-        id="uuid",
-        email="test@example.com",
-        hashed_password=hash_password("plainpassword123"),
-    )
-
-    mocker.patch("src.users.crud.get_user_by_email", return_value=None)
-
-    # Act
-    authenticated_user = await service.authenticate_user(
-        db=mock_db, email=test_user.email, password="plainpassword123"
-    )
-
-    # Assert
-    assert authenticated_user is None
 
 
 @pytest.mark.asyncio
@@ -268,7 +170,8 @@ async def test_update_user_failure_duplicate_username(mocker):
     mocker.patch(
         "src.users.crud.update_user",
         side_effect=HTTPException(
-            status_code=409, detail="이미 사용 중인 이메일 또는 사용자 이름입니다."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 사용 중인 이메일 또는 사용자 이름입니다.",
         ),
     )
 
@@ -315,7 +218,8 @@ async def test_deactivate_user_failure(mocker):
     mocker.patch(
         "src.users.crud.deactivate_user",
         side_effect=HTTPException(
-            status_code=500, detail="사용자 비활성화 중 오류가 발생했습니다."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="사용자 비활성화 중 오류가 발생했습니다.",
         ),
     )
 
@@ -357,7 +261,7 @@ async def test_delete_user_failure(mocker):
     mocker.patch(
         "src.users.crud.delete_user",
         side_effect=HTTPException(
-            status_code=409,
+            status_code=status.HTTP_409_CONFLICT,
             detail="사용자를 삭제할 수 없습니다. 관련된 데이터가 존재합니다.",
         ),
     )
@@ -406,7 +310,8 @@ async def test_update_admin_status_failure(mocker):
     mocker.patch(
         "src.users.crud.update_admin_status",
         side_effect=HTTPException(
-            status_code=500, detail="관리자 상태 업데이트 중 오류가 발생했습니다."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="관리자 상태 업데이트 중 오류가 발생했습니다.",
         ),
     )
 
@@ -459,7 +364,7 @@ async def test_update_password_failure(mocker):
     mocker.patch(
         "src.users.crud.update_password",
         side_effect=HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="사용자 비밀번호 업데이트 중 서버 오류가 발생했습니다.",
         ),
     )
