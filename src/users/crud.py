@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,18 +39,21 @@ async def create_user(
     :return: 생성된 사용자 모델
     :raises HTTPException: 이메일 또는 사용자 이름이 이미 존재하는 경우
     """
+    create_data = user_in.model_dump(mode="json")
+    create_data.pop(
+        "password", None
+    )  #  User 모델에 없는 'password' 필드를 딕셔너리에서 제거
     db_user = User(
-        email=user_in.email,
-        username=user_in.username,
+        **create_data,
         hashed_password=hashed_password,
-        profile_image_path=user_in.profile_image_path,
     )
+
     db.add(db_user)
     try:
         return await _commit_and_refresh(db, db_user)
     except IntegrityError as err:
         raise HTTPException(
-            status_code=409,
+            status_code=status.HTTP_409_CONFLICT,
             detail="이미 사용 중인 이메일 또는 사용자 이름입니다.",
         ) from err
 
@@ -132,7 +135,7 @@ async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) 
             return await _commit_and_refresh(db, db_user)
         except IntegrityError as err:
             raise HTTPException(
-                status_code=409,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="사용자 정보가 이미 존재합니다.",
             ) from err
 
@@ -154,7 +157,7 @@ async def deactivate_user(db: AsyncSession, db_user: User) -> User:
             return await _commit_and_refresh(db, db_user)
         except Exception as err:
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="사용자 비활성화 중 오류가 발생했습니다.",
             ) from err
     return db_user
@@ -175,7 +178,7 @@ async def delete_user(db: AsyncSession, db_user: User) -> bool:
         return True
     except IntegrityError as err:
         raise HTTPException(
-            status_code=409,
+            status_code=status.HTTP_409_CONFLICT,
             detail="사용자를 삭제할 수 없습니다. 관련된 데이터가 존재합니다.",
         ) from err
 
@@ -196,7 +199,7 @@ async def update_admin_status(db: AsyncSession, db_user: User, is_admin: bool) -
             return await _commit_and_refresh(db, db_user)
         except Exception as err:
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="사용자 관리자 상태 업데이트 중 서버 오류가 발생했습니다.",
             ) from err
     return db_user
@@ -219,6 +222,6 @@ async def update_password(
         return await _commit_and_refresh(db, db_user)
     except Exception as err:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="사용자 비밀번호 업데이트 중 서버 오류가 발생했습니다.",
         ) from err
