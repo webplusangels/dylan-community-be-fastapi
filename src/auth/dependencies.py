@@ -7,6 +7,7 @@ from fastapi.security.base import SecurityBase
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth import crud as auth_crud
 from src.auth.schemas import TokenData
 from src.core.config import settings
 from src.db.session import get_async_db
@@ -75,7 +76,11 @@ async def get_current_user(
         )
 
         user_id: str | None = payload.get("sub")
-        if user_id is None:
+        jti: str | None = payload.get("jti")
+        if user_id is None or jti is None:
+            raise credentials_exception
+
+        if await auth_crud.is_token_blocked(db, jti=jti):
             raise credentials_exception
 
         token_data = TokenData(user_id=user_id, roles=payload.get("roles"))
@@ -130,8 +135,13 @@ async def get_current_user_from_refresh_token(
             token, settings.REFRESH_SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         user_id: str | None = payload.get("sub")
-        if user_id is None:
+        jti: str | None = payload.get("jti")
+        if user_id is None or jti is None:
             raise credentials_exception
+
+        if await auth_crud.is_token_blocked(db, jti=jti):
+            raise credentials_exception
+
         token_data = TokenData(user_id=user_id, roles=payload.get("roles"))
     except JWTError:
         raise credentials_exception from None
