@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,7 +76,7 @@ async def refresh_token(
     current_user: Annotated[
         models.User, Depends(dependencies.get_current_user_from_refresh_token)
     ],
-    old_refresh_token: Annotated[str, Depends(dependencies.refreshTokenBearer)],
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ):
     """
@@ -88,11 +88,7 @@ async def refresh_token(
     :return: 새로운 JWT 액세스 토큰과 리프레시 토큰
     """
     try:
-        payload = jwt.decode(
-            old_refresh_token,
-            settings.REFRESH_SECRET_KEY,
-            algorithms=settings.ALGORITHM,
-        )
+        payload = request.state.decoded_refresh_token_payload
         old_jti = payload.get("jti")
         old_exp = payload.get("exp")
         if old_jti and old_exp:
