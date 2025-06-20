@@ -1,15 +1,17 @@
 from fastapi import FastAPI
 
-# from src.users.router import router as users_router
+from src.auth.router import router as auth_router
+
 # from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
+from src.users.router import router as users_router
 
 # FastAPI 애플리케이션 생성
 app = FastAPI(
-    title=settings.app_name,
+    title=settings.APP_NAME,
     description="낯가리는 사람들 API",
     version="0.1.0",
-    debug=settings.debug_mode,
+    debug=settings.DEBUG_MODE,
 )
 
 # origins = [
@@ -25,9 +27,10 @@ app = FastAPI(
 # )
 
 # 라우터 등록
-# API_V1_PREFIX = "/api/v1"
+API_V1_PREFIX = "/api/v1"
 
-# app.include_router(users_router, prefix="{API_V1_PREFIX}/users", tags=["Users"])
+app.include_router(users_router, prefix=f"{API_V1_PREFIX}", tags=["Users"])
+app.include_router(auth_router, prefix=f"{API_V1_PREFIX}", tags=["Auth"])
 
 
 @app.get("/")
@@ -46,7 +49,7 @@ async def health_check():
     """
     return {
         "status": "ok",
-        "database_url": settings.database_url.split("://")[0]
+        "database_url": settings.DATABASE_URL.split("://")[0]
         + "://***",  # 보안상 일부만 표시
     }
 
@@ -58,7 +61,7 @@ if __name__ == "__main__":
         "src.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.debug_mode,
+        reload=settings.DEBUG_MODE,
         reload_dirs=["src"],
-        log_level="debug" if settings.debug_mode else "info",
+        log_level="debug" if settings.DEBUG_MODE else "info",
     )

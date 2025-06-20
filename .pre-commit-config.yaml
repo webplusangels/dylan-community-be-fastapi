@@ -26,4 +26,4 @@ repos:
         language: system
         files: ^src/.*\.py$
         pass_filenames: false
-        stages: [commit] # commit 시에만 실행
+        stages: [pre-commit]
