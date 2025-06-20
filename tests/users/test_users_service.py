@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
+from fastapi import HTTPException, status
 
 from src.core.security import hash_password, verify_password
 from src.users import models, schemas, service
@@ -137,6 +138,32 @@ async def test_update_admin_status_success(mocker):
 
     # Assert
     assert updated_user.is_admin is False
+
+
+@pytest.mark.asyncio
+async def test_update_admin_status_fail_self_deactivation():
+    """
+    관리자 상태 업데이트 실패 테스트 (자신의 관리자 권한 해제 시도)
+    """
+    # Arrange
+    mock_db = AsyncMock()
+    db_user = models.User(id="1234", is_admin=True)
+    current_user = models.User(id="1234", is_admin=True)
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await service.update_admin_status(
+            db=mock_db, db_user=db_user, is_admin=False, current_user=current_user
+        )
+
+    assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert (
+        exc_info.value.detail
+        == "관리자는 자신의 관리자 권한을 해제할 수 없습니다."
+        in exc_info.value.detail
+    )
+
+    assert db_user.is_admin is True  # 관리자 상태는 변경되지 않아야 함
 
 
 @pytest.mark.asyncio
