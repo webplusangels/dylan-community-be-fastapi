@@ -2,7 +2,7 @@ from typing import Sequence
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users.models import User
@@ -22,7 +22,7 @@ async def _commit_and_refresh(db: AsyncSession, instance: User) -> User:
         await db.commit()
         await db.refresh(instance)
         return instance
-    except Exception:
+    except SQLAlchemyError:
         await db.rollback()
         raise  # 호출자가 구체적인 예외 처리
 
@@ -39,10 +39,7 @@ async def create_user(
     :return: 생성된 사용자 모델
     :raises HTTPException: 이메일 또는 사용자 이름이 이미 존재하는 경우
     """
-    create_data = user_in.model_dump(mode="json")
-    create_data.pop(
-        "password", None
-    )  #  User 모델에 없는 'password' 필드를 딕셔너리에서 제거
+    create_data = user_in.model_dump(mode="json", exclude={"password"})
     db_user = User(
         **create_data,
         hashed_password=hashed_password,
@@ -155,10 +152,10 @@ async def deactivate_user(db: AsyncSession, db_user: User) -> User:
         db_user.is_active = False
         try:
             return await _commit_and_refresh(db, db_user)
-        except Exception as err:
+        except SQLAlchemyError as err:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="사용자 비활성화 중 오류가 발생했습니다.",
+                detail="사용자 비활성화 중 데이터베이스 오류가 발생했습니다.",
             ) from err
     return db_user
 
@@ -197,10 +194,10 @@ async def update_admin_status(db: AsyncSession, db_user: User, is_admin: bool) -
         db_user.is_admin = is_admin
         try:
             return await _commit_and_refresh(db, db_user)
-        except Exception as err:
+        except SQLAlchemyError as err:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="사용자 관리자 상태 업데이트 중 서버 오류가 발생했습니다.",
+                detail="사용자 관리자 상태 업데이트 중 데이터베이스 오류가 발생했습니다.",
             ) from err
     return db_user
 
@@ -220,8 +217,8 @@ async def update_password(
     db_user.hashed_password = hashed_password
     try:
         return await _commit_and_refresh(db, db_user)
-    except Exception as err:
+    except SQLAlchemyError as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="사용자 비밀번호 업데이트 중 서버 오류가 발생했습니다.",
+            detail="사용자 비밀번호 업데이트 중 데이터베이스 오류가 발생했습니다.",
         ) from err
