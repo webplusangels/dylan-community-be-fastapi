@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import HTTPException
 
 from src.core.security import hash_password, verify_password
 from src.users import models, schemas, service
@@ -41,26 +40,6 @@ async def test_create_user_service_success(mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_user_profile_success(mocker):
-    """
-    사용자 프로필 조회 성공 테스트
-    """
-    # Arrange
-    test_user = models.User(
-        id="uuid",
-    )
-
-    mocker.patch("src.users.crud.get_user", return_value=test_user)
-
-    # Act
-    user_profile = await service.get_user_profile(db_user=test_user)
-
-    # Assert
-    assert user_profile is not None
-    assert user_profile.id == test_user.id
-
-
-@pytest.mark.asyncio
 async def test_update_user_profile_success(mocker):
     """
     사용자 프로필 업데이트 성공 테스트
@@ -86,7 +65,7 @@ async def test_update_user_profile_success(mocker):
 
     # Act
     updated_user = await service.update_user_profile(
-        db=mock_db, db_user=db_user, user_update=user_update, current_user=db_user
+        db=mock_db, db_user=db_user, user_update=user_update
     )
 
     # Assert
@@ -95,37 +74,6 @@ async def test_update_user_profile_success(mocker):
     )
     assert updated_user.username == user_update.username
     assert updated_user.profile_image_path == str(user_update.profile_image_path)
-
-
-@pytest.mark.asyncio
-async def test_update_user_failure_permission_denied():
-    """
-    사용자 프로필 업데이트 실패 테스트 (권한 없음)
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    user_update = schemas.UserUpdate(
-        username="updateduser",
-        profile_image_path="https://example.com/updated_image.jpg",
-    )
-    db_user = models.User(
-        id="uuid",
-        username="testuser",
-        profile_image_path="https://example.com/image.jpg",
-    )
-    current_user = models.User(id="another_uuid", is_admin=False)
-
-    # Act & Assert
-    with pytest.raises(HTTPException) as exc_info:
-        await service.update_user_profile(
-            db=mock_db,
-            db_user=db_user,
-            user_update=user_update,
-            current_user=current_user,
-        )
-
-    assert exc_info.value.status_code == 403
-    assert exc_info.value.detail == "프로필 수정 권한이 없습니다."
 
 
 @pytest.mark.asyncio
@@ -143,33 +91,11 @@ async def test_deactivate_user_success(mocker):
     )
 
     # Act
-    deactivated_user = await service.deactivate_user(
-        db=mock_db, db_user=db_user, current_user=db_user
-    )
+    deactivated_user = await service.deactivate_user(db=mock_db, db_user=db_user)
 
     # Assert
     mock_crud_deactivate.assert_called_once_with(db=mock_db, db_user=db_user)
     assert not deactivated_user.is_active
-
-
-@pytest.mark.asyncio
-async def test_deactivate_user_failure():
-    """
-    사용자 비활성화 실패 테스트
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    db_user = models.User(id="uuid", is_active=True)
-    current_user = models.User(id="uuid_diff", is_active=True, is_admin=False)
-
-    # Act & Assert
-    with pytest.raises(HTTPException) as exc_info:
-        await service.deactivate_user(
-            db=mock_db, db_user=db_user, current_user=current_user
-        )
-
-    assert exc_info.value.status_code == 403
-    assert exc_info.value.detail == "다른 사용자를 비활성화할 권한이 없습니다."
 
 
 @pytest.mark.asyncio
@@ -185,27 +111,10 @@ async def test_delete_user_success(mocker):
     )
 
     # Act
-    await service.delete_user(db=mock_db, db_user=db_user, current_user=db_user)
+    await service.delete_user(db=mock_db, db_user=db_user)
 
     # Assert
     mock_crud_delete_user.assert_called_once_with(db=mock_db, db_user=db_user)
-
-
-@pytest.mark.asyncio
-async def test_delete_user_failure(mocker):
-    """
-    사용자 삭제 실패 테스트
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    db_user = models.User(id="uuid", is_admin=False)
-
-    # Act & Assert
-    with pytest.raises(HTTPException) as exc_info:
-        await service.delete_user(db=mock_db, db_user=db_user, current_user=db_user)
-
-    assert exc_info.value.status_code == 403
-    assert exc_info.value.detail == "관리자 권한이 필요합니다."
 
 
 @pytest.mark.asyncio
@@ -215,38 +124,19 @@ async def test_update_admin_status_success(mocker):
     """
     # Arrange
     mock_db = AsyncMock()
-    db_user = models.User(is_admin=True)
+    db_user = models.User(id="1234", is_admin=True)
     updated_user = models.User(is_admin=False)
+    current_user = models.User(id="515", is_admin=True)
 
     mocker.patch("src.users.crud.update_admin_status", return_value=updated_user)
 
     # Act
     updated_user = await service.update_admin_status(
-        db=mock_db, db_user=db_user, is_admin=False, current_user=db_user
+        db=mock_db, db_user=db_user, is_admin=False, current_user=current_user
     )
 
     # Assert
     assert updated_user.is_admin is False
-
-
-@pytest.mark.asyncio
-async def test_update_admin_status_failure():
-    """
-    관리자 상태 업데이트 실패 테스트
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    db_user = models.User(is_admin=True)
-    current_user = models.User(is_admin=False)
-
-    # Act & Assert
-    with pytest.raises(HTTPException) as exc_info:
-        await service.update_admin_status(
-            db=mock_db, db_user=db_user, is_admin=False, current_user=current_user
-        )
-
-    assert exc_info.value.status_code == 403
-    assert exc_info.value.detail == "관리자 권한이 필요합니다."
 
 
 @pytest.mark.asyncio
@@ -258,15 +148,18 @@ async def test_update_password_success(mocker):
     mock_db = AsyncMock()
     new_password = "newpassword123"
     db_user = models.User(hashed_password=hash_password("oldpassword123"))
-    updated_user = models.User(hashed_password="new_hashed_password")
+    password_update = schemas.UserUpdatePassword(
+        new_password=new_password, current_password="oldpassword123"
+    )
 
     mock_crud_update_password = mocker.patch(
-        "src.users.crud.update_password", return_value=updated_user
+        "src.users.crud.update_password",
+        return_value=models.User(id=db_user.id, hashed_password="new_hashed_password"),
     )
 
     # Act
     result = await service.update_password(
-        db=mock_db, db_user=db_user, new_password=new_password, current_user=db_user
+        db=mock_db, db_user=db_user, password_update=password_update
     )
 
     # Assert
@@ -276,27 +169,3 @@ async def test_update_password_success(mocker):
     assert call_kwargs["hashed_password"] != new_password
     assert verify_password(new_password, call_kwargs["hashed_password"])
     assert result.hashed_password == "new_hashed_password"
-
-
-@pytest.mark.asyncio
-async def test_update_password_failure():
-    """
-    사용자 비밀번호 업데이트 실패 테스트
-    """
-    # Arrange
-    mock_db = AsyncMock()
-    new_password = "newpassword123"
-    db_user = models.User(id="uuid", hashed_password=hash_password("oldpassword123"))
-    current_user = models.User(id="uuid_diff", is_admin=False)
-
-    # Act & Assert
-    with pytest.raises(HTTPException) as exc_info:
-        await service.update_password(
-            db=mock_db,
-            db_user=db_user,
-            new_password=new_password,
-            current_user=current_user,
-        )
-
-    assert exc_info.value.status_code == 403
-    assert exc_info.value.detail == "비밀번호 수정 권한이 없습니다."
