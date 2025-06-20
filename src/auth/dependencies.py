@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any, Mapping
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.openapi.models import APIKey, APIKeyIn
@@ -8,7 +8,6 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import crud as auth_crud
-from src.auth.schemas import TokenData
 from src.core.config import settings
 from src.db.session import get_async_db
 from src.users import crud, models
@@ -52,6 +51,46 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 refreshTokenBearer = RefreshTokenBearer()
 
 
+async def _get_user_from_token(
+    token: str,
+    secret_key: str,
+    db: AsyncSession,
+) -> tuple[models.User, dict[str, Any]]:
+    """
+    JWT 토큰을 디코딩하여 사용자 정보를 반환합니다.
+    내부 함수로 사용되며, 액세스 토큰과 리프레시 토큰 모두에 사용됩니다.
+
+    :param token: JWT 액세스 토큰 또는 리프레시 토큰
+    :param secret_key: JWT 서명에 사용되는 비밀 키
+    :param db: 비동기 데이터베이스 세션
+    :return: 인증된 사용자 모델
+    :raises HTTPException: 토큰이 유효하지 않거나 사용자가 존재하지 않는 경우 401 에러 발생
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="유효하지 않은 인증 정보입니다.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        raw_payload: Mapping[str, Any] = jwt.decode(
+            token, secret_key, algorithms=[settings.ALGORITHM]
+        )
+        payload = dict(raw_payload)
+        user_id: str | None = payload.get("sub")
+        jti: str | None = payload.get("jti")
+        if user_id is None or jti is None:
+            raise credentials_exception
+        if await auth_crud.is_token_blocked(db, jti=jti):
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception from None
+
+    user = await crud.get_user(db=db, user_id=user_id)
+    if user is None:
+        raise credentials_exception
+    return user, payload
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[AsyncSession, Depends(get_async_db)],
@@ -62,36 +101,8 @@ async def get_current_user(
     :param token: OAuth2PasswordBearer에서 추출한 JWT 액세스 토큰
     :param db: 비동기 데이터베이스 세션
     :return: 인증된 사용자 모델
-    :raises HTTPException: 인증 실패 시 401 에러 발생
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="유효하지 않은 인증 정보입니다.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-
-        user_id: str | None = payload.get("sub")
-        jti: str | None = payload.get("jti")
-        if user_id is None or jti is None:
-            raise credentials_exception
-
-        if await auth_crud.is_token_blocked(db, jti=jti):
-            raise credentials_exception
-
-        token_data = TokenData(user_id=user_id, roles=payload.get("roles"))
-
-    except JWTError:
-        raise credentials_exception from None
-
-    user = await crud.get_user(db=db, user_id=token_data.user_id)
-    if user is None:
-        raise credentials_exception
-
+    user, _ = await _get_user_from_token(token, settings.SECRET_KEY, db)
     return user
 
 
@@ -114,40 +125,18 @@ async def get_current_active_user(
 
 
 async def get_current_user_from_refresh_token(
+    request: Request,
     token: Annotated[str, Depends(refreshTokenBearer)],
     db: Annotated[AsyncSession, Depends(get_async_db)],
 ) -> models.User:
     """
     리프레시 토큰을 디코딩하여 현재 인증된 사용자를 반환합니다.
 
+    :param request: FastAPI 요청 객체
     :param token: OAuth2PasswordBearer에서 추출한 JWT 리프레시 토큰
     :param db: 비동기 데이터베이스 세션
     :return: 인증된 사용자 모델
-    :raises HTTPException: 인증 실패 시 401 에러 발생
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="유효하지 않은 인증 정보입니다.",
-    )
-
-    try:
-        payload = jwt.decode(
-            token, settings.REFRESH_SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        user_id: str | None = payload.get("sub")
-        jti: str | None = payload.get("jti")
-        if user_id is None or jti is None:
-            raise credentials_exception
-
-        if await auth_crud.is_token_blocked(db, jti=jti):
-            raise credentials_exception
-
-        token_data = TokenData(user_id=user_id, roles=payload.get("roles"))
-    except JWTError:
-        raise credentials_exception from None
-
-    user = await crud.get_user(db=db, user_id=token_data.user_id)
-    if user is None:
-        raise credentials_exception
-
+    user, payload = await _get_user_from_token(token, settings.REFRESH_SECRET_KEY, db)
+    request.state.decoded_refresh_token_payload = payload  # type: ignore
     return user
