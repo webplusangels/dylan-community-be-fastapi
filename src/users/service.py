@@ -3,6 +3,7 @@ from typing import Sequence
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth import service as auth_service
 from src.core.security import hash_password, verify_password
 from src.users import crud, models, schemas
 
@@ -84,6 +85,9 @@ async def deactivate_user(
     :param db_user: 데이터베이스에서 조회된 사용자 모델
     :return: 비활성화된 사용자 모델
     """
+    # 사용자의 모든 토큰을 블락리스트에 추가하는 로직
+    await auth_service.invalidate_user_tokens(db, str(db_user.id))
+
     deactivated_user = await crud.deactivate_user(db=db, db_user=db_user)
     return deactivated_user
 

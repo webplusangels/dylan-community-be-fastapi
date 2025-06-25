@@ -34,6 +34,7 @@ def _create_token(
             "exp": expire,
             "iat": datetime.now(timezone.utc),
             "jti": str(uuid.uuid4()),
+            "token_version": user.token_version,
         }
     )
     return jwt.encode(to_encode, secret_key, algorithm=algorithm)
@@ -121,3 +122,24 @@ async def logout_user(db: AsyncSession, jti: str, expires_at: datetime) -> None:
     :param expires_at: 토큰의 만료 시간
     """
     await auth_crud.add_token_to_blocklist(db=db, jti=jti, expires_at=expires_at)
+
+
+async def invalidate_user_tokens(db: AsyncSession, user_id: str) -> None:
+    """
+    사용자의 모든 토큰을 블락리스트에 추가합니다.
+
+    :param db: 비동기 데이터베이스 세션
+    :param user_id: 사용자의 ID
+    """
+    await auth_crud.invalidate_user_tokens(db=db, user_id=user_id)
+
+
+async def cleanup_expired_tokens(
+    db: AsyncSession,
+) -> None:
+    """
+    블락리스트에서 만료된 토큰을 제거합니다.
+
+    :param db: 비동기 데이터베이스 세션
+    """
+    await auth_crud.cleanup_expired_tokens(db=db)

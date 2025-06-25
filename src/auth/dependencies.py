@@ -8,6 +8,7 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import crud as auth_crud
+from src.auth.exceptions import InvalidTokenError, TokenBlockedError, TokenExpiredError
 from src.core.config import settings
 from src.db.session import get_async_db
 from src.users import crud, models
@@ -64,30 +65,37 @@ async def _get_user_from_token(
     :param secret_key: JWT 서명에 사용되는 비밀 키
     :param db: 비동기 데이터베이스 세션
     :return: 인증된 사용자 모델
-    :raises HTTPException: 토큰이 유효하지 않거나 사용자가 존재하지 않는 경우 401 에러 발생
+    :raises TokenExpiredError: 토큰이 만료된 경우
+    :raises TokenBlockedError: 토큰이 블락리스트에 있는 경우
+    :raises InvalidTokenError: 토큰이 유효하지 않은 경우
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="유효하지 않은 인증 정보입니다.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         raw_payload: Mapping[str, Any] = jwt.decode(
             token, secret_key, algorithms=[settings.ALGORITHM]
         )
         payload = dict(raw_payload)
         user_id: str | None = payload.get("sub")
+        token_version: int | None = payload.get("token_version", 0)
         jti: str | None = payload.get("jti")
+
         if user_id is None or jti is None:
-            raise credentials_exception
+            raise InvalidTokenError()
+        user = await crud.get_user(db=db, user_id=user_id)
+        if user is None:
+            raise InvalidTokenError()
         if await auth_crud.is_token_blocked(db, jti=jti):
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception from None
+            raise TokenBlockedError()
+        if token_version < user.token_version:
+            raise TokenExpiredError()
+
+    except jwt.ExpiredSignatureError as expErr:
+        raise TokenExpiredError() from expErr
+    except JWTError as jwtErr:
+        raise InvalidTokenError() from jwtErr
 
     user = await crud.get_user(db=db, user_id=user_id)
     if user is None:
-        raise credentials_exception
+        raise InvalidTokenError()
     return user, payload
 
 
