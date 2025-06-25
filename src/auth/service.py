@@ -13,7 +13,11 @@ from src.users import crud, models
 
 
 def _create_token(
-    data: dict, expires_delta: timedelta, secret_key: str, algorithm: str
+    data: dict,
+    expires_delta: timedelta,
+    secret_key: str,
+    algorithm: str,
+    user: models.User,
 ) -> str:
     """
     JWT 토큰을 생성하는 내부 함수입니다.
@@ -64,6 +68,7 @@ async def authenticate_user(
 
 def create_access_token(
     data: dict,
+    user: models.User,
     expires_delta: timedelta | None = None,
 ) -> str:
     """
@@ -80,11 +85,13 @@ def create_access_token(
         expires_delta=delta,
         secret_key=settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
+        user=user,
     )
 
 
 def create_refresh_token(
     data: dict,
+    user: models.User,
     expires_delta: timedelta | None = None,
 ) -> str:
     """
@@ -101,6 +108,7 @@ def create_refresh_token(
         expires_delta=delta,
         secret_key=settings.REFRESH_SECRET_KEY,
         algorithm=settings.ALGORITHM,
+        user=user,
     )
 
 

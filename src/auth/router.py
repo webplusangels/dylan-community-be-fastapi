@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth import crud as auth_crud
 from src.auth import dependencies, schemas, service
 from src.core.config import settings
 from src.db.session import get_async_db
@@ -52,10 +53,10 @@ async def login_for_access_token(
         "roles": "admin" if user.is_admin else "user",
     }
     access_token = service.create_access_token(
-        data=token_data, expires_delta=access_token_expiry
+        data=token_data, expires_delta=access_token_expiry, user=user
     )
     refresh_token = service.create_refresh_token(
-        data=token_data, expires_delta=refresh_token_expiry
+        data=token_data, expires_delta=refresh_token_expiry, user=user
     )
 
     return {
@@ -91,9 +92,18 @@ async def refresh_token(
         payload = request.state.decoded_refresh_token_payload
         old_jti = payload.get("jti")
         old_exp = payload.get("exp")
-        if old_jti and old_exp:
-            expires_at = datetime.fromtimestamp(old_exp, tz=timezone.utc)
-            await service.logout_user(db=db, jti=old_jti, expires_at=expires_at)
+
+        # 원자성 보장을 위해 트랜잭션 시작
+        async with db.begin():
+            if await auth_crud.is_token_blocked(db, jti=old_jti):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="이미 사용된 리프레시 토큰입니다.",
+                )
+            if old_jti and old_exp:
+                expires_at = datetime.fromtimestamp(old_exp, tz=timezone.utc)
+                await service.logout_user(db=db, jti=old_jti, expires_at=expires_at)
+
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -109,10 +119,14 @@ async def refresh_token(
         "roles": "admin" if current_user.is_admin else "user",
     }
     new_access_token = service.create_access_token(
-        data=token_data, expires_delta=access_token_expiry
+        data=token_data,
+        expires_delta=access_token_expiry,
+        user=current_user,
     )
     new_refresh_token = service.create_refresh_token(
-        data=token_data, expires_delta=refresh_token_expiry
+        data=token_data,
+        expires_delta=refresh_token_expiry,
+        user=current_user,
     )
 
     return {
