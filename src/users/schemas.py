@@ -2,11 +2,11 @@ from datetime import datetime
 
 from pydantic import (
     AnyHttpUrl,
-    BaseModel,
     ConfigDict,
     EmailStr,
     Field,
     field_validator,
+    model_validator,
 )
 
 from src.common.schemas import AppBaseModel
@@ -97,14 +97,19 @@ class UserUpdate(AppBaseModel):
         ],
     )
 
-    # @field_serializer("profile_image_path")
-    # def serialize_profile_image_path(self, url: AnyHttpUrl | None, _info) -> str | None:
-    #     """
-    #     프로필 이미지 URL의 타입인 AnyHttpUrl 객체를 str으로 변환해 반환
-    #     """
-    #     if url:
-    #         return str(url)
-    #     return None
+    @model_validator(mode="after")
+    def at_least_one_field(self) -> "UserUpdate":
+        """
+        최소한 하나의 필드가 업데이트되었는지 확인하는 검증 함수
+        """
+        if not any(
+            [
+                self.username is not None,
+                self.profile_image_path is not None,
+            ]
+        ):
+            raise ValueError("최소한 하나의 필드를 업데이트해야 합니다.")
+        return self
 
 
 class UserUpdatePassword(AppBaseModel):
@@ -164,12 +169,17 @@ class UserRead(UserBase):
     )
 
 
-class UserProfile(BaseModel):
+class UserProfilePublic(AppBaseModel):
     """
-    사용자 프로필 정보를 표현하는 모델
-    공개용으로 사용되는 사용자 정보를 포함해 API 응답에 사용
+    사용자 프로필 정보를 공개용으로 표현하는 모델
+    공개 API 응답에 사용되는 사용자 정보를 포함
     """
 
+    id: str = Field(
+        ...,
+        description="사용자 고유 ID",
+        examples=["123e4567-e89b-12d3-a456-426614174000"],
+    )
     username: str = Field(..., description="사용자명")
     profile_image_path: AnyHttpUrl | None = Field(None, description="프로필 이미지 URL")
 
@@ -179,16 +189,35 @@ class UserProfile(BaseModel):
     )
 
 
-class UserInDB(UserRead):
+class UserProfilePrivate(AppBaseModel):
     """
-    내부 데이터베이스에서 사용자 정보를 읽기 위한 스키마
-    UserRead를 상속받아 DB에서 사용하는 필드를 추가로 정의
+    사용자 프로필 정보를 비공개용으로 표현하는 모델
+    내부 API 응답에 사용되는 사용자 정보를 포함
     """
 
-    hashed_password: str = Field(
+    id: str = Field(
         ...,
-        description="해시된 사용자 비밀번호",
-        examples=["$2b$12$eImiTMZG4TQ1mZ9j5a5eOe"],
+        description="사용자 고유 ID",
+        examples=["123e4567-e89b-12d3-a456-426614174000"],
+    )
+    email: EmailStr = Field(..., description="사용자 이메일 주소")
+    username: str = Field(..., description="사용자명")
+    profile_image_path: AnyHttpUrl | None = Field(None, description="프로필 이미지 URL")
+    is_active: bool = Field(..., description="사용자 활성화 상태")
+    created_at: datetime = Field(
+        ...,
+        description="사용자 생성 시간 (ISO 8601 형식)",
+        examples=["2023-10-01T12:00:00Z"],
+    )
+    updated_at: datetime = Field(
+        ...,
+        description="사용자 정보 업데이트 시간 (ISO 8601 형식)",
+        examples=["2023-10-01T12:00:00Z"],
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra="forbid",
     )
 
 

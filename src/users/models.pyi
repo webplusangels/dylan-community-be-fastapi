@@ -12,6 +12,7 @@ class User(Base):
     username: Mapped[str]
     hashed_password: Mapped[str]
     profile_image_path: Mapped[str | None]
+    token_version: Mapped[int]
     is_active: Mapped[bool]
     is_admin: Mapped[bool]
     created_at: Mapped[datetime]

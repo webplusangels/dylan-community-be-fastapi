@@ -234,17 +234,24 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
     assert updated.profile_image_path == "https://example.com/img.png"
     assert type(updated.profile_image_path) is str
 
-    # profile_image_path가 None인 경우 업데이트 테스트
-    # Arrange 2
-    update_2 = UserUpdate(profile_image_path=None)
 
-    # Act 2
-    updated_2 = await crud.update_user(
-        db=db_session, db_user=updated, user_update=update_2
+@pytest.mark.asyncio
+async def test_update_user_clear_profile_image(
+    db_session: AsyncSession, user_fixture: User
+):
+    """
+    사용자 프로필 이미지 경로를 None으로 업데이트 테스트
+    """
+    # Arrange
+    update = UserUpdate(username="testuser_updated", profile_image_path=None)
+
+    # Act
+    updated = await crud.update_user(
+        db=db_session, db_user=user_fixture, user_update=update
     )
 
-    # Assert 2
-    assert updated_2.profile_image_path is None
+    # Assert
+    assert updated.profile_image_path is None
 
 
 @pytest.mark.asyncio

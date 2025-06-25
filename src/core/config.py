@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +26,26 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="forbid",  # 추가 설정 비허용
     )
+
+    @field_validator("ACCESS_TOKEN_EXPIRE_MINUTES")
+    def validate_access_token_expire(cls, v):
+        """
+        액세스 토큰 만료 시간을 검증합니다.
+        1분 이상, 1440분(24시간) 이하이어야 합니다.
+        """
+        if v <= 0 or v > 1440:
+            raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES must be between 1 and 1440")
+        return v
+
+    @field_validator("REFRESH_TOKEN_EXPIRE_MINUTES")
+    def validate_refresh_token_expire(cls, v):
+        """
+        리프레시 토큰 만료 시간을 검증합니다.
+        1분 이상, 43200분(30일) 이하이어야 합니다.
+        """
+        if v <= 0 or v > 43200:
+            raise ValueError("REFRESH_TOKEN_EXPIRE_MINUTES must be between 1 and 43200")
+        return v
 
 
 # 애플리케이션 설정 인스턴스 생성
