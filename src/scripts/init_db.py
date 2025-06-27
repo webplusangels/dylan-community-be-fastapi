@@ -14,6 +14,9 @@ async def init_database(drop_existing: bool = True) -> None:
     """
 
     from src.auth import models as auth_models  # noqa: F401
+    from src.comments import models as comment_models  # noqa: F401
+    from src.likes import models as like_models  # noqa: F401
+    from src.posts import models as post_models  # noqa: F401
     from src.users import models as user_models  # noqa: F401
 
     print(f"데이터베이스 연결: {settings.DATABASE_URL}")
