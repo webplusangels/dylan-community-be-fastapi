@@ -47,7 +47,7 @@ async def test_update_user_profile_success(mocker):
     """
     # Arrange
     mock_db = AsyncMock()
-    user_update = schemas.UserUpdate(
+    user_update = schemas.UserUpdateProfile(
         username="updateduser",
         profile_image_path="https://example.com/updated_image.jpg",
     )

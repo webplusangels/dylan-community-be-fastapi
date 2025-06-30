@@ -22,6 +22,11 @@ class User(Base):
 
     __tablename__ = "users"
 
+    __exclude_fields__ = {
+        "hashed_password",
+        "token_version",
+    }
+
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -42,13 +47,12 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
-    posts: Mapped[list["Post"]] = relationship(
-        "Post", back_populates="author", cascade="all, delete-orphan"
-    )
-    likes: Mapped[list["PostLike"]] = relationship(
-        "PostLike", back_populates="user", cascade="all, delete-orphan"
-    )
+    posts: Mapped[list["Post"]] = relationship("Post", back_populates="author")
+    likes: Mapped[list["PostLike"]] = relationship("PostLike", back_populates="user")
     comments: Mapped[list["PostComment"]] = relationship(
-        "PostComment", back_populates="author", cascade="all, delete-orphan"
+        "PostComment", back_populates="author"
     )

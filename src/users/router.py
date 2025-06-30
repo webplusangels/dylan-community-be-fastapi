@@ -106,7 +106,7 @@ async def handle_get_user(db_user: SelfOrAdminUsers) -> models.User:
 async def handle_update_user(
     db: Annotated[AsyncSession, Depends(get_async_db)],
     db_user: SelfOrAdminUsers,
-    user_update: schemas.UserUpdate,
+    user_update: schemas.UserUpdateProfile,
 ) -> models.User:
     """
     사용자 ID로 사용자의 정보를 수정합니다. 성공 시 수정된 사용자 정보를 반환합니다.

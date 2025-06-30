@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users.models import User
-from src.users.schemas import UserCreate, UserUpdate
+from src.users.schemas import UserCreate, UserUpdateProfile
 
 
 async def _commit_and_refresh(db: AsyncSession, instance: User) -> User:
@@ -63,7 +63,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     :param user_id: 조회할 사용자 ID
     :return: 사용자 모델 또는 None
     """
-    return await db.get(User, user_id)
+    return await db.get(User, user_id)  # type: ignore
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -74,8 +74,9 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     :param email: 조회할 사용자 이메일
     :return: 사용자 모델 또는 None
     """
-    result = await db.execute(select(User).where(User.email == email))
-    return result.scalars().first()
+    stmt = select(User).where(User.email == email)  # type: ignore
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_user_by_username(db: AsyncSession, username: str) -> User | None:
@@ -86,7 +87,7 @@ async def get_user_by_username(db: AsyncSession, username: str) -> User | None:
     :param username: 조회할 사용자 이름
     :return: 사용자 모델 또는 None
     """
-    result = await db.execute(select(User).where(User.username == username))
+    result = await db.execute(select(User).where(User.username == username))  # type: ignore
     return result.scalars().first()
 
 
@@ -102,13 +103,15 @@ async def get_users(
     :return: 사용자 모델 리스트
     """
     result = await db.execute(
-        select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
+        select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)  # type: ignore
     )
 
     return result.scalars().all()
 
 
-async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) -> User:
+async def update_user(
+    db: AsyncSession, db_user: User, user_update: UserUpdateProfile
+) -> User:
     """
     사용자의 정보를 업데이트합니다.
 

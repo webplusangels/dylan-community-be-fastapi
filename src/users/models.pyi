@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import Any
 
-from sqlalchemy.orm import Mapped, declarative_base
+from sqlalchemy.orm import Mapped
 
-T = TypeVar("T")
-Base = declarative_base()
+class User:
+    __tablename__: str
 
-class User(Base):
     id: Mapped[str]
     email: Mapped[str]
     username: Mapped[str]
@@ -17,6 +16,11 @@ class User(Base):
     is_admin: Mapped[bool]
     created_at: Mapped[datetime]
     updated_at: Mapped[datetime]
+    deleted_at: Mapped[datetime | None]
+
+    posts: Mapped[list[Any]]
+    likes: Mapped[list[Any]]
+    comments: Mapped[list[Any]]
 
     # Pyre에게 __init__ 메서드가 어떤 키워드 인수든 받을 수 있다고 알려줍니다.
     def __init__(self, **kwargs: Any) -> None: ...

@@ -58,7 +58,7 @@ async def get_all_users(
 async def update_user_profile(
     db: AsyncSession,
     db_user: models.User,
-    user_update: schemas.UserUpdate,
+    user_update: schemas.UserUpdateProfile,
 ) -> models.User:
     """
     사용자 프로필을 업데이트합니다. 본인 혹은 관리자가 다른 사용자의 프로필을 업데이트할 수 있습니다.

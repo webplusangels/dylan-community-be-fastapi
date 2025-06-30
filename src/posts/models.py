@@ -2,7 +2,15 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -21,6 +29,21 @@ class Post(Base):
     """
 
     __tablename__ = "posts"
+
+    __table_args__ = (
+        Index("idx_posts_user_created", "user_id", "created_at"),
+        Index(
+            "idx_posts_created_desc",
+            "created_at",
+            postgresql_using="btree",
+            postgresql_ops={"created_at": "desc"},
+        ),
+        CheckConstraint("length(title) > 0", name="check_title_not_empty"),
+        CheckConstraint("length(content) > 0", name="check_content_not_empty"),
+        CheckConstraint(
+            "views >= 0", name="check_views_non_negative"
+        ),  # 조회수는 음수가 될 수 없음
+    )
 
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
@@ -41,6 +64,9 @@ class Post(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     author: Mapped["User"] = relationship("User", back_populates="posts")

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users import crud
 from src.users.models import User
-from src.users.schemas import UserCreate, UserUpdate
+from src.users.schemas import UserCreate, UserUpdateProfile
 
 
 @pytest.mark.asyncio
@@ -220,7 +220,7 @@ async def test_update_user_success(db_session: AsyncSession, user_fixture: User)
     사용자 정상 업데이트 테스트
     """
     # Arrange
-    update = UserUpdate(
+    update = UserUpdateProfile(
         username="testuser_updated", profile_image_path="https://example.com/img.png"
     )
 
@@ -243,7 +243,7 @@ async def test_update_user_clear_profile_image(
     사용자 프로필 이미지 경로를 None으로 업데이트 테스트
     """
     # Arrange
-    update = UserUpdate(username="testuser_updated", profile_image_path=None)
+    update = UserUpdateProfile(username="testuser_updated", profile_image_path=None)
 
     # Act
     updated = await crud.update_user(
@@ -276,7 +276,7 @@ async def test_update_user_duplicate_username(db_session: AsyncSession):
     )
 
     # Act & Assert
-    update = UserUpdate(username="user1")
+    update = UserUpdateProfile(username="user1")
     with pytest.raises(HTTPException) as exc_info:
         await crud.update_user(db=db_session, db_user=created2, user_update=update)
 

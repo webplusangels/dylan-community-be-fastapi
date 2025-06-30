@@ -73,10 +73,10 @@ class UserCreate(UserBase):
         return validate_password(value)
 
 
-class UserUpdate(AppBaseModel):
+class UserUpdateProfile(AppBaseModel):
     """
-    사용자 업데이트를 위한 스키마
-    UserBase를 상속받아 일부 필드를 선택적으로 업데이트할 수 있도록 정의
+    사용자 프로필 업데이트를 위한 스키마
+    AppBaseModel을 상속받아 일부 필드를 선택적으로 업데이트할 수 있도록 정의
     """
 
     username: str | None = Field(
@@ -98,7 +98,7 @@ class UserUpdate(AppBaseModel):
     )
 
     @model_validator(mode="after")
-    def at_least_one_field(self) -> "UserUpdate":
+    def at_least_one_field(self) -> "UserUpdateProfile":
         """
         최소한 하나의 필드가 업데이트되었는지 확인하는 검증 함수
         """
