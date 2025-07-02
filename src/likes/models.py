@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 from src.db.base import Base
 
@@ -16,10 +18,13 @@ class PostLike(Base):
     __tablename__ = "post_likes"
 
     post_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("posts.id"), primary_key=True
+        String(36), ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True
     )
     user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id"), primary_key=True
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
 
     # 관계 설정
