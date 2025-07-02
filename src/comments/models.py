@@ -25,7 +25,7 @@ class PostComment(Base):
         String(36), ForeignKey("posts.id"), nullable=False
     )
     user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     content: Mapped[str] = mapped_column(Text(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -33,6 +33,9 @@ class PostComment(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     # 관계 설정
