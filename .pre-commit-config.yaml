@@ -14,7 +14,7 @@ repos:
     rev: v0.6.0
     hooks:
       - id: ruff
-        args: [--fix] # 자동 수정
+        args: [--fix, --exit-non-zero-on-fix] # 자동 수정
       - id: ruff-format # 코드 포맷팅 (Black 대체)
 
   # 마지막에 타입 검사 (코드 수정 후)
@@ -24,6 +24,5 @@ repos:
         name: Pyrefly Type Check
         entry: poetry run pyrefly check
         language: system
-        files: ^src/.*\.py$
+        types: [python]
         pass_filenames: false
-        stages: [pre-commit]
