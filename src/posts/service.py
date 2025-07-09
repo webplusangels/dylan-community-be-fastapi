@@ -107,6 +107,7 @@ async def delete_post(
 async def search_posts(
     db: AsyncSession,
     query: str,
+    skip: int = 0,
     limit: int = 10,
 ) -> Sequence[models.Post]:
     """
@@ -114,10 +115,11 @@ async def search_posts(
 
     :param db: 비동기 데이터베이스 세션
     :param query: 검색할 키워드
+    :param skip: 조회 시작 위치 (페이징)
     :param limit: 조회할 게시글 수 (페이징)
     :return: 검색된 게시글 모델 리스트
     """
-    posts = await crud.search_posts(db=db, query=query, limit=limit)
+    posts = await crud.search_posts(db=db, query=query, skip=skip, limit=limit)
     return posts
 
 
