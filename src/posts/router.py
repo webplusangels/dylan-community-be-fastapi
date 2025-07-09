@@ -164,7 +164,7 @@ async def handle_delete_post(
 
     :param db: 비동기 데이터베이스 세션
     :param db_post: 게시글 모델 (의존성 주입을 통해 조회)
-    :param _current_user: 현재 로그인한 사용자 모델 (관리자 권한 확인용
+    :param _current_user: 현재 로그인한 사용자 모델 (관리자 권한 확인용)
     :return: None
     """
     await service.delete_post(db=db, db_post=db_post)

@@ -29,7 +29,7 @@ async def get_post_by_id(db: AsyncSession, db_post: models.Post) -> models.Post:
     게시글을 ID로 조회합니다. 조회수를 1 증가시킵니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param post_id: 조회할 게시글 ID
+    :param db_post: 데이터베이스에서 조회된 게시글 모델
     :return: 게시글 모델
     """
     await crud.increment_post_views(db=db, db_post=db_post)
