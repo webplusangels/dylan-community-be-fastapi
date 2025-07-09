@@ -40,15 +40,15 @@ async def get_user_profile(db_user: models.User) -> models.User:
     return db_user
 
 
-async def get_all_users(
+async def get_users(
     db: AsyncSession, skip: int = 0, limit: int = 100
 ) -> Sequence[models.User]:
     """
-    모든 사용자를 조회합니다.
+    사용자 목록을 조회합니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param skip: 건너뛸 사용자 수
-    :param limit: 조회할 최대 사용자 수
+    :param skip: 조회 시작 위치 (페이징)
+    :param limit: 조회할 사용자 수 (페이징)
     :return: 사용자 모델 리스트
     """
     users = await crud.get_users(db=db, skip=skip, limit=limit)
@@ -58,7 +58,7 @@ async def get_all_users(
 async def update_user_profile(
     db: AsyncSession,
     db_user: models.User,
-    user_update: schemas.UserUpdate,
+    user_update: schemas.UserUpdateProfile,
 ) -> models.User:
     """
     사용자 프로필을 업데이트합니다. 본인 혹은 관리자가 다른 사용자의 프로필을 업데이트할 수 있습니다.

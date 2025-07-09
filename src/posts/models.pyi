@@ -4,27 +4,25 @@ from typing import Any
 from sqlalchemy import Select
 from sqlalchemy.orm import Mapped
 
-from src.posts.models import Post
-
-class User:
+class Post:
     __tablename__: str
 
     id: Mapped[str]
-    email: Mapped[str]
-    username: Mapped[str]
-    hashed_password: Mapped[str]
-    profile_image_path: Mapped[str | None]
-    token_version: Mapped[int]
+    user_id: Mapped[str]
+    title: Mapped[str]
+    content: Mapped[str]
+    image_path: Mapped[str | None]
+    views: Mapped[int]
+    likes: Mapped[int]
+    comments_count: Mapped[int]
     is_active: Mapped[bool]
-    is_admin: Mapped[bool]
     created_at: Mapped[datetime]
     updated_at: Mapped[datetime]
     deleted_at: Mapped[datetime | None]
 
-    posts: Mapped[list[Any]]
-    likes: Mapped[list[Any]]
-    comments: Mapped[list[Any]]
-
+    author: Mapped[Any]  # User
+    post_likes: Mapped[list[Any]]  # PostLike
+    post_comments: Mapped[list[Any]]  # PostComment
     @classmethod
     def active_query(cls) -> Select[tuple[Post]]: ...
     @classmethod
@@ -33,6 +31,4 @@ class User:
     def public_query(cls) -> Select[tuple[Post]]: ...
     @classmethod
     def all_non_deleted_query(cls) -> Select[tuple[Post]]: ...
-
-    # Pyre에게 __init__ 메서드가 어떤 키워드 인수든 받을 수 있다고 알려줍니다.
     def __init__(self, **kwargs: Any) -> None: ...

@@ -12,7 +12,7 @@ from pydantic import (
 from src.common.schemas import AppBaseModel
 
 
-def validate_password(value: str) -> str:
+def validate_password_format(value: str) -> str:
     """
     비밀번호 유효성 검사 함수
     영문 대소문자, 숫자 조합을 요구
@@ -69,14 +69,14 @@ class UserCreate(UserBase):
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, value: str) -> str:
-        return validate_password(value)
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password_format(value)
 
 
-class UserUpdate(AppBaseModel):
+class UserUpdateProfile(AppBaseModel):
     """
-    사용자 업데이트를 위한 스키마
-    UserBase를 상속받아 일부 필드를 선택적으로 업데이트할 수 있도록 정의
+    사용자 프로필 업데이트를 위한 스키마
+    AppBaseModel을 상속받아 일부 필드를 선택적으로 업데이트할 수 있도록 정의
     """
 
     username: str | None = Field(
@@ -98,7 +98,7 @@ class UserUpdate(AppBaseModel):
     )
 
     @model_validator(mode="after")
-    def at_least_one_field(self) -> "UserUpdate":
+    def at_least_one_field(self) -> "UserUpdateProfile":
         """
         최소한 하나의 필드가 업데이트되었는지 확인하는 검증 함수
         """
@@ -133,7 +133,7 @@ class UserUpdatePassword(AppBaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, value: str) -> str:
-        return validate_password(value)
+        return validate_password_format(value)
 
 
 class UserRead(UserBase):

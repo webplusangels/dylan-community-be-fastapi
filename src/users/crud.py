@@ -1,30 +1,13 @@
+from datetime import datetime, timezone
 from typing import Sequence
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.common.crud import add_and_commit, commit_and_refresh, delete_and_commit
 from src.users.models import User
-from src.users.schemas import UserCreate, UserUpdate
-
-
-async def _commit_and_refresh(db: AsyncSession, instance: User) -> User:
-    """
-    데이터베이스에 변경 사항을 커밋하고 인스턴스를 새로 고칩니다.
-
-    :param db: 비동기 데이터베이스 세션
-    :param instance: 새로 고칠 인스턴스
-    :return: 새로 고친 인스턴스
-    :raises: DB 관련 예외를 그대로 전파
-    """
-    try:
-        await db.commit()
-        await db.refresh(instance)
-        return instance
-    except SQLAlchemyError:
-        await db.rollback()
-        raise  # 호출자가 구체적인 예외 처리
+from src.users.schemas import UserCreate, UserUpdateProfile
 
 
 async def create_user(
@@ -45,9 +28,8 @@ async def create_user(
         hashed_password=hashed_password,
     )
 
-    db.add(db_user)
     try:
-        return await _commit_and_refresh(db, db_user)
+        return await add_and_commit(db, db_user)
     except IntegrityError as err:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -57,60 +39,66 @@ async def create_user(
 
 async def get_user(db: AsyncSession, user_id: str) -> User | None:
     """
-    사용자 ID로 사용자를 조회합니다.
+    활성화된 사용자를 ID로 조회합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param user_id: 조회할 사용자 ID
     :return: 사용자 모델 또는 None
     """
-    return await db.get(User, user_id)
+    stmt = User.active_query().where(User.id == user_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     """
-    이메일로 사용자를 조회합니다.
+    활성화된 사용자를 이메일로 조회합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param email: 조회할 사용자 이메일
     :return: 사용자 모델 또는 None
     """
-    result = await db.execute(select(User).where(User.email == email))
-    return result.scalars().first()
+    stmt = User.active_query().where(User.email == email)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_user_by_username(db: AsyncSession, username: str) -> User | None:
     """
-    사용자 이름으로 사용자를 조회합니다.
+    활성화된 사용자를 사용자 이름으로 조회합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param username: 조회할 사용자 이름
     :return: 사용자 모델 또는 None
     """
-    result = await db.execute(select(User).where(User.username == username))
-    return result.scalars().first()
+    stmt = User.active_query().where(User.username == username)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_users(
     db: AsyncSession, skip: int = 0, limit: int = 100
 ) -> Sequence[User]:
     """
-    사용자 목록을 조회합니다.
+    활성화된 사용자 목록을 조회합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param skip: 건너뛸 사용자 수
     :param limit: 조회할 최대 사용자 수
     :return: 사용자 모델 리스트
     """
-    result = await db.execute(
-        select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
+    stmt = (
+        User.active_query().order_by(User.created_at.desc()).offset(skip).limit(limit)
     )
-
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 
-async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) -> User:
+async def update_user(
+    db: AsyncSession, db_user: User, user_update: UserUpdateProfile
+) -> User:
     """
-    사용자의 정보를 업데이트합니다.
+    사용자의 정보를 업데이트합니다. (사용자 이름, 프로필 이미지)
 
     :param db: 비동기 데이터베이스 세션
     :param db_user: 업데이트할 사용자 모델
@@ -119,39 +107,36 @@ async def update_user(db: AsyncSession, db_user: User, user_update: UserUpdate) 
     :raises HTTPException: 사용자 이름이 이미 존재하는 경우
     """
     update_data = user_update.model_dump(mode="json", exclude_unset=True)
-    is_updated = False
+    if not update_data:
+        return db_user
 
     for key, value in update_data.items():
-        if getattr(db_user, key) != value:
-            setattr(db_user, key, value)
-            is_updated = True
+        setattr(db_user, key, value)
 
-    # 변경된 내용이 있는 경우에만 커밋
-    if is_updated:
-        try:
-            return await _commit_and_refresh(db, db_user)
-        except IntegrityError as err:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="사용자 정보가 이미 존재합니다.",
-            ) from err
-
-    return db_user
+    try:
+        return await commit_and_refresh(db, db_user)
+    except IntegrityError as err:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="사용자 정보가 이미 존재합니다.",
+        ) from err
 
 
 async def deactivate_user(db: AsyncSession, db_user: User) -> User:
     """
-    사용자를 비활성화합니다 (논리적 삭제).
+    사용자를 비활성화하고 논리적으로 삭제합니다 (Soft Delete).
+    is_active를 False로, deleted_at에 현재 시간을 설정합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param db_user: 비활성화할 사용자 모델
     :return: 비활성화된 사용자 모델
     :raises HTTPException: 비활성화 중 오류가 발생한 경우
     """
-    if db_user.is_active:
+    if db_user.is_active and db_user.deleted_at is None:
         db_user.is_active = False
+        db_user.deleted_at = datetime.now(timezone.utc)
         try:
-            return await _commit_and_refresh(db, db_user)
+            return await commit_and_refresh(db, db_user)
         except SQLAlchemyError as err:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -162,21 +147,21 @@ async def deactivate_user(db: AsyncSession, db_user: User) -> User:
 
 async def delete_user(db: AsyncSession, db_user: User) -> bool:
     """
-    사용자를 데이터베이스에서 물리적으로 삭제합니다.
+    사용자를 데이터베이스에서 물리적으로 삭제합니다 (Hard Delete).
 
     :param db: 비동기 데이터베이스 세션
     :param db_user: 삭제할 사용자 모델
-    :return: 성공 시 True, 대상이 없을 시 False
+    :return: 성공 시 True
     :raises HTTPException: 삭제 중 무결성 오류가 발생한 경우
     """
     try:
-        await db.delete(db_user)
-        await db.commit()
-        return True
+        return await delete_and_commit(db, db_user)
     except IntegrityError as err:
+        # 자식 레코드가 존재하여 삭제할 수 없는 경우
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="사용자를 삭제할 수 없습니다. 관련된 데이터가 존재합니다.",
+            detail="사용자를 삭제할 수 없습니다. 관련된 데이터(게시글 등)가 존재합니다.",
         ) from err
 
 
@@ -193,7 +178,7 @@ async def update_admin_status(db: AsyncSession, db_user: User, is_admin: bool) -
     if db_user.is_admin != is_admin:
         db_user.is_admin = is_admin
         try:
-            return await _commit_and_refresh(db, db_user)
+            return await commit_and_refresh(db, db_user)
         except SQLAlchemyError as err:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -216,7 +201,7 @@ async def update_password(
     """
     db_user.hashed_password = hashed_password
     try:
-        return await _commit_and_refresh(db, db_user)
+        return await commit_and_refresh(db, db_user)
     except SQLAlchemyError as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

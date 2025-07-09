@@ -85,7 +85,7 @@ async def _get_user_from_token(
             raise InvalidTokenError()
         if await auth_crud.is_token_blocked(db, jti=jti):
             raise TokenBlockedError()
-        if token_version < user.token_version:
+        if token_version is not None and token_version < user.token_version:
             raise TokenExpiredError()
 
     except jwt.ExpiredSignatureError as expErr:

@@ -124,10 +124,17 @@ async def test_create_access_token(mocker):
     # Arrange
     data = {"sub": "testuser", "roles": ["user"]}
     expires_delta = timedelta(minutes=30)
+    test_user = user_models.User(
+        id="test-user-id",
+        email="test@example.com",
+        username="testuser",
+        token_version=1,
+    )
 
     # Act
     token = service.create_access_token(
         data=data,
+        user=test_user,
         expires_delta=expires_delta,
     )
 
@@ -144,6 +151,7 @@ async def test_create_access_token(mocker):
     assert "exp" in decoded_token  # 만료 시간 포함 여부 확인
     assert "iat" in decoded_token  # 발급 시간 포함 여부 확인
     assert "jti" in decoded_token  # JWT ID 포함 여부 확인
+    assert decoded_token["token_version"] == test_user.token_version
 
     # 만료 시간 검증
     expected_exp = time() + (30 * 60)
@@ -158,10 +166,17 @@ async def test_create_refresh_token(mocker):
     # Arrange
     data = {"sub": "testuser", "roles": ["user"]}
     expires_delta = timedelta(minutes=60)
+    test_user = user_models.User(
+        id="test-user-id",
+        email="test@example.com",
+        username="testuser",
+        token_version=1,
+    )
 
     # Act
     token = service.create_refresh_token(
         data=data,
+        user=test_user,
         expires_delta=expires_delta,
     )
 
@@ -178,7 +193,9 @@ async def test_create_refresh_token(mocker):
     assert "exp" in decoded_token
     assert "iat" in decoded_token
     assert "jti" in decoded_token
+    assert decoded_token["token_version"] == test_user.token_version
 
+    # 만료 시간 검증
     expected_exp = time() + (60 * 60)  # 60분
     assert abs(decoded_token["exp"] - expected_exp) < 60
 
@@ -188,10 +205,21 @@ async def test_create_refresh_token_default_expiry():
     """
     리프레시 토큰 기본 만료시간 테스트
     """
+    # Arrange
     data = {"sub": "testuser"}
+    test_user = user_models.User(
+        id="test-user-id",
+        email="test@example.com",
+        username="testuser",
+        token_version=1,
+    )
 
-    token = service.create_refresh_token(data=data)  # expires_delta 없음
+    # Act
+    token = service.create_refresh_token(
+        data=data, user=test_user
+    )  # expires_delta 없음
 
+    # Assert
     decoded = jwt.decode(
         token, settings.REFRESH_SECRET_KEY, algorithms=[settings.ALGORITHM]
     )
@@ -199,6 +227,7 @@ async def test_create_refresh_token_default_expiry():
     # 기본 만료시간 확인
     expected_exp = time() + (settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60)
     assert abs(decoded["exp"] - expected_exp) < 60
+    assert decoded["token_version"] == test_user.token_version
 
 
 @pytest.mark.asyncio
