@@ -4,6 +4,7 @@ from src.auth.router import router as auth_router
 
 # from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
+from src.posts.router import router as posts_router
 from src.users.router import router as users_router
 
 # FastAPI 애플리케이션 생성
@@ -31,6 +32,7 @@ API_V1_PREFIX = "/api/v1"
 
 app.include_router(users_router, prefix=f"{API_V1_PREFIX}", tags=["Users"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}", tags=["Auth"])
+app.include_router(posts_router, prefix=f"{API_V1_PREFIX}", tags=["Posts"])
 
 
 @app.get("/")
