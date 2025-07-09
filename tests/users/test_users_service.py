@@ -84,19 +84,26 @@ async def test_deactivate_user_success(mocker):
     """
     # Arrange
     mock_db = AsyncMock()
-    db_user = models.User(is_active=True, is_admin=True)
+    db_user = models.User(id="test-user-id", is_active=True, is_admin=True)  # id 추가
     deactivated_user = models.User(is_active=False)
+
+    mock_invalidate_tokens = mocker.patch(
+        "src.auth.service.invalidate_user_tokens", return_value=None
+    )
 
     mock_crud_deactivate = mocker.patch(
         "src.users.crud.deactivate_user", return_value=deactivated_user
     )
 
     # Act
-    deactivated_user = await service.deactivate_user(db=mock_db, db_user=db_user)
+    result = await service.deactivate_user(db=mock_db, db_user=db_user)
 
     # Assert
+    # 실제 호출된 방식 확인 (args 사용)
+    expected_calls = [mocker.call(mock_db, "test-user-id")]
+    mock_invalidate_tokens.assert_has_calls(expected_calls)
     mock_crud_deactivate.assert_called_once_with(db=mock_db, db_user=db_user)
-    assert not deactivated_user.is_active
+    assert not result.is_active
 
 
 @pytest.mark.asyncio
