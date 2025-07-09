@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from src.common.schemas import AppBaseModel
 from src.users.schemas import UserProfilePublic
@@ -32,6 +32,7 @@ class PostBase(AppBaseModel):
     image_path: str | None = Field(
         None,
         max_length=255,
+        pattern=r"^https?://[^\s]+$",
         description="게시글 이미지 URL",
         examples=[
             "https://example.com/images/post1.jpg",
@@ -46,11 +47,7 @@ class PostCreate(PostBase):
     PostBase를 상속받아 추가적인 필드를 정의
     """
 
-    user_id: str = Field(
-        ...,
-        description="게시글 작성자의 사용자 ID",
-        examples=["123e4567-e89b-12d3-a456-426614174000"],
-    )
+    pass
 
 
 class PostUpdate(AppBaseModel):
@@ -78,6 +75,21 @@ class PostUpdate(AppBaseModel):
         description="게시글 이미지 URL",
         examples=["https://example.com/images/updated_post.jpg"],
     )
+
+    @model_validator(mode="after")
+    def at_least_one_field(self) -> "PostUpdate":
+        """
+        최소한 하나의 필드가 업데이트되었는지 확인하는 검증 함수
+        """
+        if not any(
+            [
+                self.title is not None,
+                self.content is not None,
+                self.image_path is not None,
+            ]
+        ):
+            raise ValueError("최소한 하나의 필드를 업데이트해야 합니다.")
+        return self
 
 
 class PostRead(PostBase):
@@ -121,6 +133,11 @@ class PostRead(PostBase):
         description="게시글 정보 업데이트 시간 (ISO 8601 형식)",
         examples=["2023-10-01T12:00:00Z"],
     )
+    is_active: bool = Field(
+        default=True,
+        description="게시글 활성화 여부",
+        examples=[True, False],
+    )
 
     author: UserProfilePublic = Field(
         ...,
@@ -130,40 +147,6 @@ class PostRead(PostBase):
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "username": "dylan_dev",
                 "profile_image_path": "https://example.com/images/profile.jpg",
-            }
-        ],
-    )
-
-    model_config = ConfigDict(
-        from_attributes=True,  # 속성에서 모델로 변환 가능
-    )
-
-
-class PostList(AppBaseModel):
-    """
-    게시글 목록을 표현하는 모델
-    여러 개의 게시글 정보를 포함하는 리스트 형태로 정의
-    """
-
-    posts: list[PostRead] = Field(
-        ...,
-        description="게시글 정보 리스트",
-        examples=[
-            {
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "title": "첫 번째 게시글",
-                "content": "이것은 첫 번째 게시글의 내용입니다.",
-                "image_path": "https://example.com/images/post1.jpg",
-                "views": 10,
-                "likes": 5,
-                "comments_count": 2,
-                "created_at": "2023-10-01T12:00:00Z",
-                "updated_at": "2023-10-01T12:00:00Z",
-                "author": {
-                    "id": "123e4567-e89b-12d3-a456-426614174000",
-                    "username": "dylan_dev",
-                    "profile_image_path": "https://example.com/images/profile.jpg",
-                },
             }
         ],
     )
@@ -199,6 +182,28 @@ class PostListResponse(AppBaseModel):
         ...,
         description="다음 페이지가 있는지 여부",
         examples=[True, False],
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,  # 속성에서 모델로 변환 가능
+    )
+
+
+class PostLikeToggleResponse(AppBaseModel):
+    """
+    게시글 좋아요 토글 응답 모델
+    게시글 좋아요 상태와 함께 게시글 정보 반환
+    """
+
+    liked: bool = Field(
+        ...,
+        description="좋아요 상태 (True: 좋아요, False: 좋아요 취소)",
+        examples=[True, False],
+    )
+    like_count: int = Field(
+        ...,
+        description="좋아요 수 (음수가 될 수 없음)",
+        examples=[0, 5, 20],
     )
 
     model_config = ConfigDict(
