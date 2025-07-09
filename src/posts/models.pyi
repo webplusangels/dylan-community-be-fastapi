@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 
+from sqlalchemy import Select
 from sqlalchemy.orm import Mapped
 
 class Post:
@@ -22,5 +23,12 @@ class Post:
     author: Mapped[Any]  # User
     post_likes: Mapped[list[Any]]  # PostLike
     post_comments: Mapped[list[Any]]  # PostComment
-
+    @classmethod
+    def active_query(cls) -> Select[tuple[Post]]: ...
+    @classmethod
+    def with_author(cls, stmt: Select[tuple[Post]]) -> Select[tuple[Post]]: ...
+    @classmethod
+    def public_query(cls) -> Select[tuple[Post]]: ...
+    @classmethod
+    def all_non_deleted_query(cls) -> Select[tuple[Post]]: ...
     def __init__(self, **kwargs: Any) -> None: ...
