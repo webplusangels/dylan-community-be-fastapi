@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -10,8 +11,9 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    select,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 from sqlalchemy.sql import func
 
 from src.db.base import Base
@@ -59,6 +61,7 @@ class Post(Base):
     views: Mapped[int] = mapped_column(Integer(), default=0, nullable=False)
     likes: Mapped[int] = mapped_column(Integer(), default=0, nullable=False)
     comments_count: Mapped[int] = mapped_column(Integer(), default=0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -76,3 +79,42 @@ class Post(Base):
     post_comments: Mapped[list["PostComment"]] = relationship(
         "PostComment", back_populates="post", cascade="all, delete-orphan"
     )
+
+    @classmethod
+    def active_query(cls):
+        """
+        활성화된 게시글만 조회하는 쿼리입니다.
+        활성화된 게시글은 is_active가 True이고, deleted_at이 None인 게시글을 의미합니다.
+
+        :return: 활성화된 게시글을 조회하는 SQLAlchemy 쿼리 객체
+        """
+        return select(cls).where(cls.is_active.is_(True), cls.deleted_at.is_(None))
+
+    @classmethod
+    def public_query(cls):
+        """
+        공개된 게시글만 조회하는 쿼리입니다.
+        일반 사용자들이 볼 수 있는 게시글입니다.
+        """
+        return cls.active_query()
+
+    @classmethod
+    def all_non_deleted_query(cls):
+        """
+        삭제되지 않은 모든 게시글을 조회하는 쿼리입니다.
+        deleted_at이 None인 게시글을 의미합니다.
+        관리자 또는 특정 권한을 가진 사용자가 삭제되지 않은 게시글을 조회할 때 사용됩니다.
+
+        :return: 삭제되지 않은 게시글을 조회하는 SQLAlchemy 쿼리 객체
+        """
+        return select(cls).where(cls.deleted_at.is_(None))
+
+    @classmethod
+    def with_author(cls, stmt):
+        """
+        게시글과 작성자 정보를 eager loading하는 쿼리입니다.
+
+        :param stmt: SQLAlchemy 쿼리 객체
+        :return: 작성자 정보를 포함한 게시글 쿼리 객체
+        """
+        return stmt.options(selectinload(cls.author))

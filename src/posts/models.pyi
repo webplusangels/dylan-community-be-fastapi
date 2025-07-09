@@ -14,6 +14,7 @@ class Post:
     views: Mapped[int]
     likes: Mapped[int]
     comments_count: Mapped[int]
+    is_active: Mapped[bool]
     created_at: Mapped[datetime]
     updated_at: Mapped[datetime]
     deleted_at: Mapped[datetime | None]
