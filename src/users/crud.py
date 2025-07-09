@@ -132,7 +132,7 @@ async def deactivate_user(db: AsyncSession, db_user: User) -> User:
     :return: 비활성화된 사용자 모델
     :raises HTTPException: 비활성화 중 오류가 발생한 경우
     """
-    if db_user.is_active or db_user.deleted_at is None:
+    if db_user.is_active and db_user.deleted_at is None:
         db_user.is_active = False
         db_user.deleted_at = datetime.now(timezone.utc)
         try:
