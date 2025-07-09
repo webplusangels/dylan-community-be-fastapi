@@ -53,3 +53,10 @@ __pycache__/
 
 # pyrefly
 pyrefly.toml
+
+# gemini
+.gemini/
+
+# Documentation
+src/posts/README.md
+src/users/README.md
