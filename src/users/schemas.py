@@ -12,7 +12,7 @@ from pydantic import (
 from src.common.schemas import AppBaseModel
 
 
-def validate_password(value: str) -> str:
+def validate_password_format(value: str) -> str:
     """
     비밀번호 유효성 검사 함수
     영문 대소문자, 숫자 조합을 요구
@@ -69,8 +69,8 @@ class UserCreate(UserBase):
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, value: str) -> str:
-        return validate_password(value)
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password_format(value)
 
 
 class UserUpdateProfile(AppBaseModel):
@@ -133,7 +133,7 @@ class UserUpdatePassword(AppBaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, value: str) -> str:
-        return validate_password(value)
+        return validate_password_format(value)
 
 
 class UserRead(UserBase):
