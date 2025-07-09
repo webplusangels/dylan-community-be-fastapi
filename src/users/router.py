@@ -9,10 +9,12 @@ from src.users.dependencies import (
     AdminUser,
     SelfOrAdminUsers,
     SelfUser,
-    get_user_by_id_or_404,
+    ValidUser,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+DbSession = Annotated[AsyncSession, Depends(get_async_db)]
 
 
 @router.post(
@@ -24,7 +26,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 )
 async def create_user(
     user_in: schemas.UserCreate,
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
 ) -> models.User:
     """
     새로운 사용자를 생성합니다. 성공 시 사용자 정보를 반환합니다.
@@ -41,17 +43,17 @@ async def create_user(
     "/",
     response_model=Sequence[schemas.UserRead],
     status_code=status.HTTP_200_OK,
-    summary="모든 사용자 조회",
-    description="모든 사용자를 조회합니다. 성공 시 사용자 목록을 반환합니다.",
+    summary="사용자 목록 조회",
+    description="사용자 목록을 조회합니다. 성공 시 사용자 목록을 반환합니다.",
 )
-async def handle_get_all_users(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+async def handle_get_users(
+    db: DbSession,
     _current_user: AdminUser,
     skip: int = Query(0, ge=0, description="건너뛸 사용자 수"),
     limit: int = Query(100, ge=1, le=100, description="조회할 최대 사용자 수"),
 ) -> Sequence[models.User]:
     """
-    모든 사용자를 조회합니다. 성공 시 사용자 목록을 반환합니다.
+    사용자 목록을 조회합니다. 성공 시 사용자 목록을 반환합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param _current_user: 현재 로그인한 사용자 모델 (관리자 권한 확인용)
@@ -59,18 +61,18 @@ async def handle_get_all_users(
     :param limit: 조회할 최대 사용자 수 (기본값: 100, 최소 1, 최대 100)
     :return: 사용자 모델 리스트
     """
-    users = await service.get_all_users(db=db, skip=skip, limit=limit)
+    users = await service.get_users(db=db, skip=skip, limit=limit)
     return users
 
 
 @router.get(
     "/me",
-    response_model=schemas.UserProfilePublic,
+    response_model=schemas.UserProfilePrivate,
     status_code=status.HTTP_200_OK,
     summary="내 프로필 조회",
     description="현재 로그인한 사용자의 프로필 정보를 조회합니다. 성공 시 사용자 프로필 정보를 반환합니다.",
 )
-async def get_my_profile(
+async def handle_get_my_profile(
     current_user: SelfUser,
 ) -> models.User:
     """
@@ -104,7 +106,7 @@ async def handle_get_user(db_user: SelfOrAdminUsers) -> models.User:
     description="사용자 ID로 사용자의 정보를 수정합니다. 성공 시 수정된 사용자 정보를 반환합니다.",
 )
 async def handle_update_user(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
     db_user: SelfOrAdminUsers,
     user_update: schemas.UserUpdateProfile,
 ) -> models.User:
@@ -131,7 +133,7 @@ async def handle_update_user(
     description="사용자 ID로 사용자의 비밀번호를 변경합니다. 성공 시 업데이트된 사용자 정보를 반환합니다.",
 )
 async def handle_change_password(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
     db_user: SelfOrAdminUsers,
     password_update: schemas.UserUpdatePassword,
 ) -> models.User:
@@ -157,7 +159,7 @@ async def handle_change_password(
     description="사용자 ID로 사용자를 비활성화합니다. 성공 시 비활성화된 사용자 정보를 반환합니다.",
 )
 async def handle_deactivate_user(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
     db_user: SelfOrAdminUsers,
 ) -> models.User:
     """
@@ -179,8 +181,8 @@ async def handle_deactivate_user(
     description="사용자 ID로 사용자의 관리자 권한을 업데이트합니다. 성공 시 업데이트된 사용자 정보를 반환합니다.",
 )
 async def handle_update_admin_status(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
-    db_user: Annotated[models.User, Depends(get_user_by_id_or_404)],
+    db: DbSession,
+    db_user: ValidUser,
     admin_update: schemas.UserUpdateAdmin,
     current_user: AdminUser,
 ) -> models.User:
@@ -209,15 +211,15 @@ async def handle_update_admin_status(
     description="사용자 ID로 사용자를 삭제합니다. 성공 시 204 No Content 응답을 반환합니다.",
 )
 async def handle_delete_user(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
-    db_user: Annotated[models.User, Depends(get_user_by_id_or_404)],
+    db: DbSession,
+    db_user: ValidUser,
     _current_user: AdminUser,
 ) -> None:
     """
     사용자 ID로 사용자를 삭제합니다. 성공 시 204 No Content 응답을 반환합니다.
 
-    :param db_user: 삭제할 사용자 모델 (의존성 주입을 통해 조회)
     :param db: 비동기 데이터베이스 세션
+    :param db_user: 삭제할 사용자 모델 (의존성 주입을 통해 조회)
     :param _current_user: 현재 로그인한 사용자 모델 (권한 확인용)
     :return: None
     """
