@@ -55,6 +55,7 @@ def require_self_or_admin(
 
 
 # 타입 별칭 정의
+ValidUser = Annotated[models.User, Depends(get_user_by_id_or_404)]
 SelfUser = Annotated[models.User, Depends(get_current_active_user)]
 AdminUser = Annotated[models.User, Depends(require_admin)]
 SelfOrAdminUsers = Annotated[models.User, Depends(require_self_or_admin)]
