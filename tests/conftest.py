@@ -13,6 +13,11 @@ from src.db.session import get_async_db
 # pytest를 위한 애플리케이션 및 설정 관련 모듈
 from src.main import app
 
+# 게시글 모델 및 CRUD 관련 모듈
+from src.posts.crud import create_post
+from src.posts.models import Post
+from src.posts.schemas import PostCreate
+
 # 사용자 모델 및 CRUD 관련 모듈
 from src.users.crud import create_user
 from src.users.models import User
@@ -91,7 +96,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 # User 객체를 생성하는 fixture
 @pytest_asyncio.fixture
-async def user_fixture(db_session: AsyncSession) -> User:
+async def test_user(db_session: AsyncSession) -> User:
     """
     테스트용 사용자 객체를 생성합니다.
     기본값을 사용하거나, 원하는 값으로 생성할 수 있습니다.
@@ -107,3 +112,19 @@ async def user_fixture(db_session: AsyncSession) -> User:
     )
 
     return created_user
+
+
+@pytest_asyncio.fixture
+async def test_post(db_session: AsyncSession, test_user: User) -> Post:
+    """
+    테스트용 게시글 객체를 생성합니다.
+    """
+    post_in = PostCreate(
+        title="Test Post Title",
+        content="Test Post Content",
+    )
+    created_post = await create_post(
+        db=db_session, post_in=post_in, user_id=str(test_user.id)
+    )
+
+    return created_post
