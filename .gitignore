@@ -60,3 +60,7 @@ pyrefly.toml
 # Documentation
 src/posts/README.md
 src/users/README.md
+src/auth/README.md
+src/comments/README.md
+src/likes/README.md
+src/notifications/README.md
