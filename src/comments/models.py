@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
-    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -33,9 +32,6 @@ class PostComment(Base):
     __table_args__ = (
         Index("idx_post_comments_post_id", "post_id"),
         Index("idx_post_comments_created_at", "created_at"),
-        CheckConstraint(
-            "length(content) > 1", name="check_comment_content_min_length"
-        ),  # 최소 길이 1자
     )
 
     id: Mapped[str] = mapped_column(
