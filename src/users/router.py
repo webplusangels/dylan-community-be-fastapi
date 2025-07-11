@@ -192,7 +192,7 @@ async def handle_update_admin_status(
     :param db: 비동기 데이터베이스 세션
     :param db_user: 관리자 권한을 업데이트할 사용자 모델 (의존성 주입을 통해 조회)
     :param admin_update: 관리자 권한 업데이트 스키마
-    :param _current_user: 현재 로그인한 사용자 모델 (권한 확인용)
+    :param current_user: 현재 로그인한 사용자 모델 (권한 확인용)
     :return: 업데이트된 사용자 모델
     """
     updated_user = await service.update_admin_status(

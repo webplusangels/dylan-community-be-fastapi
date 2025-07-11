@@ -105,7 +105,6 @@ async def handle_get_post(
 )
 async def handle_update_post(
     db: DbSession,
-    _current_user: SelfUser,
     db_post: AuthorOrAdminPost,
     post_in: schemas.PostUpdate,
 ) -> models.Post:
@@ -113,7 +112,6 @@ async def handle_update_post(
     게시글을 업데이트합니다. 성공 시 업데이트된 게시글 정보를 반환합니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param _current_user: 현재 로그인한 사용자 모델
     :param db_post: 게시글 모델 (작성자 또는 관리자 권한 확인용)
     :param post_in: 게시글 업데이트 스키마
     :return: 업데이트된 게시글 모델
@@ -133,14 +131,12 @@ async def handle_update_post(
 )
 async def handle_deactivate_post(
     db: DbSession,
-    _current_user: SelfUser,
     db_post: AuthorOrAdminPost,
 ) -> models.Post:
     """
     게시글을 비활성화(soft delete)합니다. 성공 시 비활성화된 게시글 정보를 반환합니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param current_user: 현재 로그인한 사용자 모델 (작성자 또는 관리자)
     :param db_post: 게시글 모델 (의존성 주입을 통해 조회)
     :return: 비활성화된 게시글 모델
     """
