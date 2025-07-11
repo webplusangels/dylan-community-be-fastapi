@@ -80,18 +80,18 @@ async def get_total_comments_count(db: AsyncSession, post_id: str) -> int:
 
 
 async def update_comment(
-    db: AsyncSession, db_comment: PostComment, comment_in: CommentUpdate
+    db: AsyncSession, db_comment: PostComment, comment_update: CommentUpdate
 ) -> PostComment:
     """
     댓글을 업데이트합니다.
 
     :param db: 비동기 데이터베이스 세션
     :param db_comment: 데이터베이스에서 조회된 댓글 모델
-    :param comment_in: 댓글 업데이트 스키마
+    :param comment_update: 댓글 업데이트 스키마
     :return: 업데이트된 댓글 모델
     :raises HTTPException: 댓글 업데이트 중 오류가 발생한 경우
     """
-    update_data = comment_in.model_dump(exclude_unset=True)
+    update_data = comment_update.model_dump(exclude_unset=True)
     if not update_data:
         return db_comment
 
