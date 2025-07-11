@@ -9,7 +9,7 @@ from src.users.models import User as models_User
 
 
 async def get_comments_by_id_or_404(
-    db: DbSession, comment_id: int = Path()
+    db: DbSession, comment_id: str = Path()
 ) -> models.PostComment:
     """
     경로 매개변수에서 comment_id를 받아 해당 댓글을 조회하고,
