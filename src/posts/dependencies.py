@@ -36,7 +36,7 @@ def require_author_or_admin(
     if db_post.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="게시글 작성자만 수정할 수 있습니다.",
+            detail="작성자 혹은 관리자만 수정할 수 있습니다.",
         )
     return db_post
 
