@@ -105,4 +105,3 @@ async def delete_comment(
     :return: None
     """
     await crud.delete_comment(db=db, db_comment=db_comment)
-    return
