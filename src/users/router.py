@@ -21,7 +21,7 @@ router = APIRouter(prefix="/users", tags=["users"])
     summary="사용자 생성",
     description="새로운 사용자를 생성합니다. 성공 시 사용자 정보를 반환합니다.",
 )
-async def create_user(
+async def handle_create_user(
     user_in: schemas.UserCreate,
     db: DbSession,
 ) -> models.User:

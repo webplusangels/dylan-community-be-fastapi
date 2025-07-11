@@ -21,7 +21,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     summary="액세스 토큰 발급",
     description="사용자의 이메일과 비밀번호로 인증 후 JWT 액세스 토큰을 발급합니다.",
 )
-async def login_for_access_token(
+async def handle_login_for_access_token(
     db: DbSession,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
@@ -72,7 +72,7 @@ async def login_for_access_token(
     summary="액세스 토큰 갱신",
     description="현재 액세스 토큰을 갱신하여 새로운 JWT 액세스 토큰과 리프레시 토큰을 발급합니다.",
 )
-async def refresh_token(
+async def handle_refresh_token(
     current_user: Annotated[
         models.User, Depends(dependencies.get_current_user_from_refresh_token)
     ],
@@ -141,7 +141,7 @@ async def refresh_token(
     summary="로그아웃",
     description="현재 사용자의 액세스 토큰을 블락리스트에 추가하여 로그아웃 처리합니다.",
 )
-async def logout(
+async def handle_logout(
     db: DbSession,
     access_token: Annotated[str, Depends(dependencies.oauth2_scheme)],
     refresh_token: Annotated[str, Depends(dependencies.refreshTokenBearer)],

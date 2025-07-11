@@ -89,24 +89,25 @@ class CommentListResponse(AppBaseModel):
     comments: list[CommentRead] = Field(
         ...,
         description="댓글 목록",
-        examples=[
-            {
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "content": "이 게시글 정말 유익하네요!",
-                "created_at": "2023-10-01T12:00:00Z",
-                "updated_at": "2023-10-01T12:00:00Z",
-                "is_active": True,
-                "author": {
-                    "id": "123e4567-e89b-12d3-a456-426614174000",
-                    "username": "dylan_dev",
-                    "profile_image_path": "https://example.com/images/profile.jpg",
-                },
-            }
-        ],
     )
-
     total_count: int = Field(
         ...,
         description="전체 댓글 수",
         examples=[100],
+    )
+    page: int = Field(
+        description="현재 페이지 번호",
+        examples=[1, 2, 3],
+    )
+    page_size: int = Field(
+        description="페이지당 댓글 수",
+        examples=[10, 20, 50],
+    )
+    has_next: bool = Field(
+        description="다음 페이지가 있는지 여부",
+        examples=[True, False],
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,  # 속성에서 모델로 변환 가능
     )
