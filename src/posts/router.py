@@ -1,16 +1,13 @@
-from typing import Annotated
+from fastapi import APIRouter, Query, status
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.db.session import get_async_db
+from src.comments import schemas as comment_schemas
+from src.comments import service as comment_service
+from src.db.session import DbSession
 from src.posts import models, schemas, service
 from src.posts.dependencies import AuthorOrAdminPost, ValidPost
 from src.users.dependencies import AdminUser, SelfUser
 
 router = APIRouter(prefix="/posts", tags=["posts"])
-
-DbSession = Annotated[AsyncSession, Depends(get_async_db)]
 
 
 @router.post(
@@ -20,7 +17,7 @@ DbSession = Annotated[AsyncSession, Depends(get_async_db)]
     summary="게시글 생성",
     description="새로운 게시글을 생성합니다. 성공 시 게시글 정보를 반환합니다.",
 )
-async def create_post(
+async def handle_create_post(
     db: DbSession,
     current_user: SelfUser,
     post_in: schemas.PostCreate,
@@ -92,8 +89,8 @@ async def handle_get_post(
     :param db_post: 게시글 모델 (의존성 주입을 통해 조회)
     :return: 게시글 모델
     """
-    db_post = await service.get_post_by_id(db=db, db_post=db_post)
-    return db_post
+    post = await service.get_post_by_id(db=db, db_post=db_post)
+    return post
 
 
 @router.patch(
@@ -105,7 +102,6 @@ async def handle_get_post(
 )
 async def handle_update_post(
     db: DbSession,
-    _current_user: SelfUser,
     db_post: AuthorOrAdminPost,
     post_in: schemas.PostUpdate,
 ) -> models.Post:
@@ -113,7 +109,6 @@ async def handle_update_post(
     게시글을 업데이트합니다. 성공 시 업데이트된 게시글 정보를 반환합니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param _current_user: 현재 로그인한 사용자 모델
     :param db_post: 게시글 모델 (작성자 또는 관리자 권한 확인용)
     :param post_in: 게시글 업데이트 스키마
     :return: 업데이트된 게시글 모델
@@ -133,14 +128,12 @@ async def handle_update_post(
 )
 async def handle_deactivate_post(
     db: DbSession,
-    _current_user: SelfUser,
     db_post: AuthorOrAdminPost,
 ) -> models.Post:
     """
     게시글을 비활성화(soft delete)합니다. 성공 시 비활성화된 게시글 정보를 반환합니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param current_user: 현재 로그인한 사용자 모델 (작성자 또는 관리자)
     :param db_post: 게시글 모델 (의존성 주입을 통해 조회)
     :return: 비활성화된 게시글 모델
     """
@@ -168,3 +161,40 @@ async def handle_delete_post(
     :return: None
     """
     await service.delete_post(db=db, db_post=db_post)
+
+
+@router.get(
+    "/{post_id}/comments",
+    response_model=comment_schemas.CommentListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="댓글 목록 조회",
+    description="포스트의 댓글 목록을 조회합니다. 성공 시 댓글 목록을 반환합니다.",
+)
+async def handle_get_comments_by_post(
+    db: DbSession,
+    db_post: ValidPost,
+    skip: int = Query(0, ge=0, description="건너뛸 댓글 수"),
+    limit: int = Query(10, ge=1, le=100, description="조회할 최대 댓글 수"),
+) -> comment_schemas.CommentListResponse:
+    """
+    게시글에 대한 댓글 목록을 조회합니다. 성공 시 댓글 목록과 총 댓글 수를 반환합니다.
+
+    :param db: 비동기 데이터베이스 세션
+    :param db_post: 댓글이 속한 게시글 모델 (유효성 검사 포함)
+    :param skip: 건너뛸 댓글 수 (기본값: 0)
+    :param limit: 조회할 최대 댓글 수 (기본값: 10, 최대 100)
+    :return: 댓글 모델 리스트와 총 댓글 수
+    """
+    comments, total_count = await comment_service.get_comments_with_total_count_by_post(
+        db=db, post_id=db_post.id, skip=skip, limit=limit
+    )
+
+    total_count_int: int = int(total_count)
+
+    return comment_schemas.CommentListResponse(
+        comments=comments,
+        total_count=total_count_int,
+        page=skip // limit + 1,
+        page_size=limit,
+        has_next=total_count_int > (skip + limit),
+    )

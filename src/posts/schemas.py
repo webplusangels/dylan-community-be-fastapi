@@ -167,14 +167,17 @@ class PostListResponse(AppBaseModel):
         description="게시글 정보 리스트",
     )
     total_count: int = Field(
+        ...,
         description="전체 게시글 수",
         examples=[100, 250],
     )
     page: int = Field(
+        ...,
         description="현재 페이지 번호",
         examples=[1, 2, 3],
     )
     page_size: int = Field(
+        ...,
         description="페이지당 게시글 수",
         examples=[10, 20, 50],
     )

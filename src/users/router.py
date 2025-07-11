@@ -1,9 +1,8 @@
-from typing import Annotated, Sequence
+from typing import Sequence
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Query, status
 
-from src.db.session import get_async_db
+from src.db.session import DbSession
 from src.users import models, schemas, service
 from src.users.dependencies import (
     AdminUser,
@@ -14,8 +13,6 @@ from src.users.dependencies import (
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-DbSession = Annotated[AsyncSession, Depends(get_async_db)]
-
 
 @router.post(
     "/",
@@ -24,7 +21,7 @@ DbSession = Annotated[AsyncSession, Depends(get_async_db)]
     summary="사용자 생성",
     description="새로운 사용자를 생성합니다. 성공 시 사용자 정보를 반환합니다.",
 )
-async def create_user(
+async def handle_create_user(
     user_in: schemas.UserCreate,
     db: DbSession,
 ) -> models.User:
@@ -192,7 +189,7 @@ async def handle_update_admin_status(
     :param db: 비동기 데이터베이스 세션
     :param db_user: 관리자 권한을 업데이트할 사용자 모델 (의존성 주입을 통해 조회)
     :param admin_update: 관리자 권한 업데이트 스키마
-    :param _current_user: 현재 로그인한 사용자 모델 (권한 확인용)
+    :param current_user: 현재 로그인한 사용자 모델 (권한 확인용)
     :return: 업데이트된 사용자 모델
     """
     updated_user = await service.update_admin_status(

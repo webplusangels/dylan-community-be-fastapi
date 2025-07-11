@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import crud as auth_crud
 from src.auth.exceptions import InvalidTokenError, TokenBlockedError, TokenExpiredError
 from src.core.config import settings
-from src.db.session import get_async_db
+from src.db.session import DbSession
 from src.users import crud, models
 
 
@@ -101,7 +101,7 @@ async def _get_user_from_token(
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
 ) -> models.User:
     """
     JWT 토큰을 디코딩하여 현재 인증된 사용자를 반환합니다.
@@ -135,7 +135,7 @@ async def get_current_active_user(
 async def get_current_user_from_refresh_token(
     request: Request,
     token: Annotated[str, Depends(refreshTokenBearer)],
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
 ) -> models.User:
     """
     리프레시 토큰을 디코딩하여 현재 인증된 사용자를 반환합니다.

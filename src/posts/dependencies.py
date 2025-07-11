@@ -1,15 +1,15 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Path, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.session import get_async_db
+from src.auth.dependencies import get_current_active_user
+from src.db.session import DbSession
 from src.posts import crud, models
-from src.users.dependencies import SelfUser
+from src.users.models import User as models_User
 
 
 async def get_post_by_id_or_404(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
     post_id: str = Path(),
 ) -> models.Post:
     """
@@ -19,14 +19,15 @@ async def get_post_by_id_or_404(
     post = await crud.get_post(db=db, post_id=post_id)
     if not post:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="게시글을 찾을 수 없습니다."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"게시글을 찾을 수 없습니다. {post_id=}",
         )
     return post
 
 
 def require_author_or_admin(
     db_post: Annotated[models.Post, Depends(get_post_by_id_or_404)],
-    current_user: SelfUser,
+    current_user: Annotated[models_User, Depends(get_current_active_user)],
 ) -> models.Post:
     """
     현재 사용자가 게시글 작성자이거나 관리자 권한이 있는지 확인하는 의존성 함수.
@@ -35,7 +36,7 @@ def require_author_or_admin(
     if db_post.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="권한이 없습니다.",
+            detail="작성자 혹은 관리자만 수정할 수 있습니다.",
         )
     return db_post
 

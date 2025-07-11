@@ -4,12 +4,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import crud as auth_crud
 from src.auth import dependencies, schemas, service
 from src.core.config import settings
-from src.db.session import get_async_db
+from src.db.session import DbSession
 from src.users import models
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -22,8 +21,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     summary="액세스 토큰 발급",
     description="사용자의 이메일과 비밀번호로 인증 후 JWT 액세스 토큰을 발급합니다.",
 )
-async def login_for_access_token(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+async def handle_login_for_access_token(
+    db: DbSession,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
     """
@@ -73,12 +72,12 @@ async def login_for_access_token(
     summary="액세스 토큰 갱신",
     description="현재 액세스 토큰을 갱신하여 새로운 JWT 액세스 토큰과 리프레시 토큰을 발급합니다.",
 )
-async def refresh_token(
+async def handle_refresh_token(
     current_user: Annotated[
         models.User, Depends(dependencies.get_current_user_from_refresh_token)
     ],
     request: Request,
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
 ):
     """
     리프레시 토큰으로 새로운 리프레시 토큰과 액세스 토큰을 발급하는 엔드포인트입니다.
@@ -142,8 +141,8 @@ async def refresh_token(
     summary="로그아웃",
     description="현재 사용자의 액세스 토큰을 블락리스트에 추가하여 로그아웃 처리합니다.",
 )
-async def logout(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+async def handle_logout(
+    db: DbSession,
     access_token: Annotated[str, Depends(dependencies.oauth2_scheme)],
     refresh_token: Annotated[str, Depends(dependencies.refreshTokenBearer)],
 ):
