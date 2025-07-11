@@ -96,14 +96,17 @@ class CommentListResponse(AppBaseModel):
         examples=[100],
     )
     page: int = Field(
+        ...,
         description="현재 페이지 번호",
         examples=[1, 2, 3],
     )
     page_size: int = Field(
+        ...,
         description="페이지당 댓글 수",
         examples=[10, 20, 50],
     )
     has_next: bool = Field(
+        ...,
         description="다음 페이지가 있는지 여부",
         examples=[True, False],
     )
