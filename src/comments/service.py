@@ -30,7 +30,7 @@ async def get_comment_by_id(db: AsyncSession, comment_id: str) -> models.PostCom
     댓글 ID로 댓글을 조회합니다.
 
     :param db: 비동기 데이터베이스 세션
-    :param db_comment: 데이터베이스에서 조회된 댓글 모델
+    :param comment_id: 조회할 댓글 ID
     :return: 조회된 댓글 모델
     """
     comment = await crud.get_comment(db=db, comment_id=comment_id)
