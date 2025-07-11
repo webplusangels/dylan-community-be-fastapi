@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,4 +25,4 @@ async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 # 별칭 정의
-DbSession = AsyncGenerator[AsyncSession, Depends(get_async_db)]
+DbSession = Annotated[AsyncSession, Depends(get_async_db)]
