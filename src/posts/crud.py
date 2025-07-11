@@ -181,6 +181,7 @@ async def delete_post(db: AsyncSession, db_post: Post) -> bool:
 
     :param db: 비동기 데이터베이스 세션
     :param db_post: 삭제할 게시글 모델 (DB에서 조회된 상태여야 함)
+    :return: 삭제 성공 여부 (True)
     :raises HTTPException: 게시글이 존재하지 않거나 삭제 중 오류 발생 시
     """
     try:
