@@ -1,16 +1,11 @@
-from typing import Annotated
+from fastapi import APIRouter, Query, status
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.db.session import get_async_db
+from src.db.session import DbSession
 from src.posts import models, schemas, service
 from src.posts.dependencies import AuthorOrAdminPost, ValidPost
 from src.users.dependencies import AdminUser, SelfUser
 
 router = APIRouter(prefix="/posts", tags=["posts"])
-
-DbSession = Annotated[AsyncSession, Depends(get_async_db)]
 
 
 @router.post(

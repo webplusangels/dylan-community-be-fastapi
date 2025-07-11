@@ -1,15 +1,14 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Path, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_active_user
-from src.db.session import get_async_db
+from src.db.session import DbSession
 from src.users import crud, models
 
 
 async def get_user_by_id_or_404(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
     user_id: str = Path(),
 ) -> models.User:
     """

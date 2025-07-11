@@ -1,9 +1,8 @@
-from typing import Annotated, Sequence
+from typing import Sequence
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Query, status
 
-from src.db.session import get_async_db
+from src.db.session import DbSession
 from src.users import models, schemas, service
 from src.users.dependencies import (
     AdminUser,
@@ -13,8 +12,6 @@ from src.users.dependencies import (
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
-
-DbSession = Annotated[AsyncSession, Depends(get_async_db)]
 
 
 @router.post(

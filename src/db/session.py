@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.base import AsyncSessionLocal
@@ -21,3 +22,7 @@ async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
         raise
     finally:
         await session.close()
+
+
+# 별칭 정의
+DbSession = AsyncGenerator[AsyncSession, Depends(get_async_db)]

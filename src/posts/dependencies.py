@@ -1,16 +1,15 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Path, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_active_user
-from src.db.session import get_async_db
+from src.db.session import DbSession
 from src.posts import crud, models
 from src.users.models import User as models_User
 
 
 async def get_post_by_id_or_404(
-    db: Annotated[AsyncSession, Depends(get_async_db)],
+    db: DbSession,
     post_id: str = Path(),
 ) -> models.Post:
     """
