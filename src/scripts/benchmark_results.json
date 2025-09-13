@@ -1,0 +1,34 @@
+[
+  {
+    "endpoint": "/api/v1/posts/",
+    "avg_response_time_ms": 14.48,
+    "requests_per_second": 69.06,
+    "success_rate_percent": 100.0,
+    "memory_usage_mb": 0.04,
+    "cpu_usage_percent": 1.6
+  },
+  {
+    "endpoint": "/api/v1/users/me",
+    "avg_response_time_ms": 13.52,
+    "requests_per_second": 73.99,
+    "success_rate_percent": 100.0,
+    "memory_usage_mb": 0.01,
+    "cpu_usage_percent": 2.3
+  },
+  {
+    "endpoint": "/api/v1/comments/49c914d6-c858-4581-b54e-d562e22bedbe",
+    "avg_response_time_ms": 14.32,
+    "requests_per_second": 69.85,
+    "success_rate_percent": 100.0,
+    "memory_usage_mb": 0.0,
+    "cpu_usage_percent": 2.2
+  },
+  {
+    "endpoint": "/api/v1/likes/posts/98e3a82e-d2a9-49d3-88c0-cf8fcc49537f",
+    "avg_response_time_ms": 16.56,
+    "requests_per_second": 60.37,
+    "success_rate_percent": 100.0,
+    "memory_usage_mb": 0.0,
+    "cpu_usage_percent": 1.9
+  }
+]
