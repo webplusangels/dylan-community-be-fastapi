@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -16,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 from sqlalchemy.sql import func
 
-from src.db.base import Base
+from src.db.base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from src.comments.models import PostComment
@@ -24,7 +23,7 @@ if TYPE_CHECKING:
     from src.users.models import User
 
 
-class Post(Base):
+class Post(Base, SoftDeleteMixin):
     """
     Post 모델 클래스입니다.
     이 클래스는 SQLAlchemy를 사용해 DB 테이블을 정의합니다.
@@ -61,15 +60,11 @@ class Post(Base):
     views: Mapped[int] = mapped_column(Integer(), default=0, nullable=False)
     likes: Mapped[int] = mapped_column(Integer(), default=0, nullable=False)
     comments_count: Mapped[int] = mapped_column(Integer(), default=0, nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-    deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
     )
 
     author: Mapped["User"] = relationship("User", back_populates="posts")
@@ -79,16 +74,6 @@ class Post(Base):
     post_comments: Mapped[list["PostComment"]] = relationship(
         "PostComment", back_populates="post", cascade="all, delete-orphan"
     )
-
-    @classmethod
-    def active_query(cls):
-        """
-        활성화된 게시글만 조회하는 쿼리입니다.
-        활성화된 게시글은 is_active가 True이고, deleted_at이 None인 게시글을 의미합니다.
-
-        :return: 활성화된 게시글을 조회하는 SQLAlchemy 쿼리 객체
-        """
-        return select(cls).where(cls.is_active.is_(True), cls.deleted_at.is_(None))
 
     @classmethod
     def public_query(cls):
