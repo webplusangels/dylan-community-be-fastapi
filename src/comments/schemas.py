@@ -14,8 +14,8 @@ class CommentBase(AppBaseModel):
 
     content: str = Field(
         ...,
-        min_length=10,
-        description="댓글 내용 (최소 10자)",
+        min_length=2,
+        description="댓글 내용 (최소 2자)",
         examples=[
             "이 게시글 정말 유익하네요!",
             "좋은 정보 감사합니다.",
@@ -42,8 +42,8 @@ class CommentUpdate(AppBaseModel):
 
     content: str = Field(
         ...,
-        min_length=10,
-        description="수정된 댓글 내용 (최소 10자)",
+        min_length=2,
+        description="수정된 댓글 내용 (최소 2자)",
         examples=["수정된 댓글 내용입니다."],
     )
 

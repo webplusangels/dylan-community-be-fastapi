@@ -3,25 +3,23 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    Boolean,
     DateTime,
     ForeignKey,
     Index,
     String,
     Text,
-    select,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 from sqlalchemy.sql import func
 
-from src.db.base import Base
+from src.db.base import Base, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from src.posts.models import Post
     from src.users.models import User
 
 
-class PostComment(Base):
+class PostComment(Base, SoftDeleteMixin):
     """
     PostComment 모델 클래스입니다.
     이 클래스는 SQLAlchemy를 사용해 DB 테이블을 정의합니다.
@@ -44,29 +42,16 @@ class PostComment(Base):
         String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     content: Mapped[str] = mapped_column(Text(), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
 
     # 관계 설정
     post: Mapped["Post"] = relationship("Post", back_populates="post_comments")
     author: Mapped["User"] = relationship("User", back_populates="comments")
-
-    @classmethod
-    def active_query(cls):
-        """
-        활성화된 댓글만 조회하는 쿼리
-
-        :return: 활성화된 댓글 쿼리
-        """
-        return select(cls).where(cls.is_active.is_(True), cls.deleted_at.is_(None))
 
     @classmethod
     def public_query(cls):

@@ -107,8 +107,6 @@ async def update_user(
     :raises HTTPException: 사용자 이름이 이미 존재하는 경우
     """
     update_data = user_update.model_dump(mode="json", exclude_unset=True)
-    if not update_data:
-        return db_user
 
     for key, value in update_data.items():
         setattr(db_user, key, value)

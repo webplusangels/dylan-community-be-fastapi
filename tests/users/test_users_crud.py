@@ -1,6 +1,7 @@
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users import crud
@@ -365,6 +366,25 @@ async def test_update_admin_status_no_change(db_session: AsyncSession, test_user
 
 
 @pytest.mark.asyncio
+async def test_update_admin_status_failure(db_session: AsyncSession):
+    """
+    관리자 상태 업데이트 실패 테스트 (예외 발생)
+    """
+    # Arrange
+    fake_user = User(id="nonexistent-id", is_active=True, deleted_at=None)
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.update_admin_status(db=db_session, db_user=fake_user, is_admin=True)
+
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert (
+        exc_info.value.detail
+        == "사용자 관리자 상태 업데이트 중 데이터베이스 오류가 발생했습니다."
+    )
+
+
+@pytest.mark.asyncio
 async def test_deactivate_user(db_session: AsyncSession, test_user: User):
     """
     사용자 비활성화 테스트
@@ -401,6 +421,24 @@ async def test_deactivate_user_already_deactivated(
 
 
 @pytest.mark.asyncio
+async def test_deactivate_user_failure(db_session: AsyncSession):
+    """
+    사용자 비활성화 실패 테스트 (예외 발생)
+    """
+    # Arrange
+    fake_user = User(id="nonexistent-id", is_active=True, deleted_at=None)
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.deactivate_user(db=db_session, db_user=fake_user)
+
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert (
+        exc_info.value.detail == "사용자 비활성화 중 데이터베이스 오류가 발생했습니다."
+    )
+
+
+@pytest.mark.asyncio
 async def test_delete_user_success(db_session: AsyncSession, test_user: User):
     """
     사용자 삭제 테스트
@@ -422,6 +460,27 @@ async def test_delete_user_success(db_session: AsyncSession, test_user: User):
 
 
 @pytest.mark.asyncio
+async def test_delete_user_failure(db_session: AsyncSession, mocker, test_user: User):
+    """
+    사용자 삭제 실패 테스트 (예외 발생)
+    """
+    # Arrange
+    mocker.patch(
+        "src.users.crud.delete_and_commit", side_effect=IntegrityError("", "", "")
+    )
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.delete_user(db=db_session, db_user=test_user)
+
+    assert exc_info.value.status_code == status.HTTP_409_CONFLICT
+    assert (
+        "사용자를 삭제할 수 없습니다. 관련된 데이터(게시글 등)가 존재합니다."
+        in exc_info.value.detail
+    )
+
+
+@pytest.mark.asyncio
 async def test_update_password(db_session: AsyncSession, test_user: User):
     """
     사용자 비밀번호 업데이트 테스트
@@ -438,6 +497,27 @@ async def test_update_password(db_session: AsyncSession, test_user: User):
     # Assert
     assert updated_user.hashed_password == new_hashed_password
     assert updated_user.hashed_password != original_password
+
+
+@pytest.mark.asyncio
+async def test_update_password_failure(db_session: AsyncSession):
+    """
+    사용자 비밀번호 업데이트 실패 테스트 (예외 발생)
+    """
+    # Arrange
+    fake_user = User(id="nonexistent-id", is_active=True, deleted_at=None)
+    new_hashed_password = "new_hashed_password"
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.update_password(
+            db=db_session, db_user=fake_user, hashed_password=new_hashed_password
+        )
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert (
+        exc_info.value.detail
+        == "사용자 비밀번호 업데이트 중 데이터베이스 오류가 발생했습니다."
+    )
 
 
 @pytest.mark.asyncio
