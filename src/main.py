@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 
 from src.auth.router import router as auth_router
+from src.comments.router import router as comments_router
 
 # from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
+from src.likes.router import router as likes_router
 from src.posts.router import router as posts_router
 from src.users.router import router as users_router
 
@@ -33,6 +35,8 @@ API_V1_PREFIX = "/api/v1"
 app.include_router(users_router, prefix=f"{API_V1_PREFIX}", tags=["Users"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}", tags=["Auth"])
 app.include_router(posts_router, prefix=f"{API_V1_PREFIX}", tags=["Posts"])
+app.include_router(comments_router, prefix=f"{API_V1_PREFIX}", tags=["Comments"])
+app.include_router(likes_router, prefix=f"{API_V1_PREFIX}", tags=["Likes"])
 
 
 @app.get("/")

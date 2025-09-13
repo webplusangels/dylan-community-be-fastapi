@@ -1,5 +1,9 @@
+from unittest.mock import AsyncMock
+
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.posts import crud
@@ -27,6 +31,28 @@ async def test_create_post(db_session: AsyncSession, test_user: User):
     assert created_post.content == post_in.content
     assert created_post.user_id == str(test_user.id)
     assert created_post.author.id == str(test_user.id)
+
+
+@pytest.mark.asyncio
+async def test_create_post_fail(mocker):
+    """
+    게시글 생성 실패 테스트
+    DB에서 IntegrityError 발생 시 HTTPException이 발생하는지 확인
+    """
+    # Arrange
+    post_in = PostCreate(title="Test Post", content="Content")
+    mock_db = AsyncMock()
+
+    mocker.patch(
+        "src.posts.crud.add_and_commit", side_effect=IntegrityError("", "", "")
+    )
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.create_post(db=mock_db, post_in=post_in, user_id="user1")
+
+    assert exc_info.value.status_code == 409
+    assert "게시글 생성 중 오류" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
@@ -65,6 +91,29 @@ async def test_get_posts(db_session: AsyncSession, test_user: User):
 
 
 @pytest.mark.asyncio
+async def test_get_posts_by_user(db_session: AsyncSession, test_user: User):
+    """
+    특정 사용자의 게시글 목록 조회 테스트
+    """
+    # Arrange
+    for i in range(5):
+        post_in = PostCreate(title=f"User Post {i}", content=f"Content {i}")
+        await crud.create_post(
+            db=db_session, post_in=post_in, user_id=str(test_user.id)
+        )
+
+    # Act
+    user_posts = await crud.get_posts_by_user(
+        db=db_session, user_id=str(test_user.id), skip=0, limit=10
+    )
+
+    # Assert
+    assert len(user_posts) == 5
+    for post in user_posts:
+        assert post.user_id == str(test_user.id)
+
+
+@pytest.mark.asyncio
 async def test_update_post(db_session: AsyncSession, test_post: Post):
     """
     게시글 업데이트 테스트
@@ -83,11 +132,76 @@ async def test_update_post(db_session: AsyncSession, test_post: Post):
 
 
 @pytest.mark.asyncio
+async def test_update_post_fail(mocker):
+    """
+    게시글 업데이트 실패 테스트
+    DB에서 IntegrityError 발생 시 HTTPException이 발생하는지 확인
+    """
+    # Arrange
+    mock_db = AsyncMock()
+    db_post = Post(id="post-id-123", title="Original", content="Original Content")
+    post_update = PostUpdate(title="Updated Title", content="Updated Content")
+
+    mocker.patch(
+        "src.posts.crud.commit_and_refresh", side_effect=IntegrityError("", "", "")
+    )
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.update_post(db=mock_db, db_post=db_post, post_update=post_update)
+
+    assert exc_info.value.status_code == 409
+    assert "게시글 업데이트 중 오류" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
 async def test_deactivate_post(db_session: AsyncSession, test_post: Post):
     """
     게시글 비활성화 테스트
     """
     # Act
+    deactivated_post = await crud.deactivate_post(db=db_session, db_post=test_post)
+
+    # Assert
+    assert deactivated_post.deleted_at is not None
+    assert deactivated_post.is_active is False
+
+
+@pytest.mark.asyncio
+async def test_deactivate_post_fail(mocker):
+    """
+    게시글 비활성화 실패 테스트
+    DB에서 IntegrityError 발생 시 HTTPException이 발생하는지 확인
+    """
+    # Arrange
+    mock_db = AsyncMock()
+    db_post = Post(id="post-id-123", is_active=True)
+
+    mocker.patch(
+        "src.posts.crud.commit_and_refresh", side_effect=IntegrityError("", "", "")
+    )
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.deactivate_post(db=mock_db, db_post=db_post)
+
+    assert exc_info.value.status_code == 409
+    assert "게시글 비활성화 중 오류" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_deactivate_post_already_deleted(
+    db_session: AsyncSession, test_post: Post
+):
+    """
+    이미 비활성화된 게시글을 다시 비활성화하려고 할 때 원래 상태를 유지하는지 테스트
+    """
+    # Arrange
+    # 먼저 게시글을 비활성화
+    await crud.deactivate_post(db=db_session, db_post=test_post)
+
+    # Act
+    # 다시 비활성화 시도
     deactivated_post = await crud.deactivate_post(db=db_session, db_post=test_post)
 
     # Assert
@@ -111,6 +225,28 @@ async def test_delete_post(db_session: AsyncSession, test_post: Post):
     result = await db_session.execute(stmt)
     fetched_post = result.scalar_one_or_none()
     assert fetched_post is None, "게시글이 데이터베이스에서 삭제되지 않았습니다."
+
+
+@pytest.mark.asyncio
+async def test_delete_post_fail(mocker):
+    """
+    게시글 삭제 실패 테스트
+    DB에서 IntegrityError 발생 시 HTTPException이 발생하는지 확인
+    """
+    # Arrange
+    mock_db = AsyncMock()
+    db_post = Post(id="post-id-123", is_active=False)
+
+    mocker.patch(
+        "src.posts.crud.delete_and_commit", side_effect=IntegrityError("", "", "")
+    )
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc_info:
+        await crud.delete_post(db=mock_db, db_post=db_post)
+
+    assert exc_info.value.status_code == 409
+    assert "게시글 삭제 중 오류" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
@@ -184,9 +320,9 @@ async def test_search_posts(db_session: AsyncSession, test_user: User):
     # Assert
     assert len(searched_posts) == 5
     for post in searched_posts:
-        assert search_keyword in post.title or search_keyword in post.content, (
-            f"Keyword not found in post {post.id}"
-        )
+        assert (
+            search_keyword in post.title or search_keyword in post.content
+        ), f"Keyword not found in post {post.id}"
 
     # 검색 결과가 없는 경우 확인
     no_result_posts = await crud.search_posts(db=db_session, query="NonExistentKeyword")
@@ -245,3 +381,37 @@ async def test_get_posts_excludes_deactivated(
     assert post1 in posts
     assert post2 in posts
     assert deactivated_post not in posts
+
+
+@pytest.mark.asyncio
+async def test_increment_comment_count(db_session: AsyncSession, test_post: Post):
+    """
+    게시글 댓글 수 증가 테스트
+    """
+    # Arrange
+    initial_count = test_post.comments_count
+
+    # Act
+    updated_post = await crud.increment_comment_count(db=db_session, db_post=test_post)
+
+    # Assert
+    assert updated_post.comments_count == initial_count + 1
+
+
+@pytest.mark.asyncio
+async def test_decrement_comment_count(db_session: AsyncSession, test_post: Post):
+    """
+    게시글 댓글 수 감소 테스트
+    """
+    # Arrange
+    # 댓글 수를 2로 설정
+    test_post.comments_count = 2
+    await db_session.commit()
+    await db_session.refresh(test_post)
+    initial_count = test_post.comments_count
+
+    # Act
+    updated_post = await crud.decrement_comment_count(db=db_session, db_post=test_post)
+
+    # Assert
+    assert updated_post.comments_count == initial_count - 1

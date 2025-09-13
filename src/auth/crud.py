@@ -8,7 +8,7 @@ from src.users import crud as user_crud
 
 
 async def add_token_to_blocklist(
-    db: AsyncSession, jti: str, expires_at: datetime
+    db: AsyncSession, jti: str, expires_at: datetime, user_id: str
 ) -> None:
     """
     jti를 블락리스트에 추가합니다.
@@ -16,8 +16,9 @@ async def add_token_to_blocklist(
     :param db: 비동기 데이터베이스 세션
     :param jti: 토큰의 고유 식별자 (jti)
     :param expires_at: 토큰의 만료 시간
+    :param user_id: 사용자의 고유 식별자
     """
-    blocklist_entry = TokenBlocklist(jti=jti, expires_at=expires_at)
+    blocklist_entry = TokenBlocklist(jti=jti, expires_at=expires_at, user_id=user_id)
     db.add(blocklist_entry)
     await db.commit()
 

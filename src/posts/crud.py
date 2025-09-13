@@ -7,7 +7,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.crud import add_and_commit, commit_and_refresh, delete_and_commit
-from src.likes.models import PostLike
 from src.posts.models import Post
 from src.posts.schemas import PostCreate, PostUpdate
 
@@ -22,6 +21,7 @@ async def create_post(db: AsyncSession, post_in: PostCreate, user_id: str) -> Po
     :return: 생성된 게시글 모델
     :raises HTTPException: 게시글 생성 중 오류 발생 시
     """
+
     db_post = Post(**post_in.model_dump(), user_id=user_id)
 
     try:
@@ -29,7 +29,7 @@ async def create_post(db: AsyncSession, post_in: PostCreate, user_id: str) -> Po
     except IntegrityError as err:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="게시글 생성 중 오류가 발생했습니다. 존재하지 않는 사용자 ID이거나 리소스 충돌이 발생했을 수 있습니다.",
+            detail="게시글 생성 중 오류가 발생했습니다",
         ) from err
 
 
@@ -137,8 +137,6 @@ async def update_post(db: AsyncSession, db_post: Post, post_update: PostUpdate) 
     :raises HTTPException: 게시글이 존재하지 않거나 업데이트 중 오류 발생 시
     """
     update_data = post_update.model_dump(mode="json", exclude_unset=True)
-    if not update_data:
-        return db_post
 
     for key, value in update_data.items():
         setattr(db_post, key, value)
@@ -211,83 +209,6 @@ async def increment_post_views(db: AsyncSession, db_post: Post) -> Post:
     )
     await db.execute(stmt)
     return await commit_and_refresh(db, db_post)
-
-
-async def get_like_by_user(
-    db: AsyncSession, post_id: str, user_id: str
-) -> PostLike | None:
-    """
-    사용자가 특정 게시글에 좋아요를 눌렀는지 확인합니다.
-
-    :param db: 비동기 데이터베이스 세션
-    :param post_id: 게시글 ID
-    :param user_id: 사용자 ID
-    :return: PostLike 모델 또는 None
-    """
-    stmt = select(PostLike).where(
-        PostLike.post_id == post_id, PostLike.user_id == user_id
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def add_like(db: AsyncSession, db_post: Post, user_id: str) -> Post:
-    """
-    게시글에 좋아요를 추가하고, 게시글의 좋아요 수를 원자적으로 증가시킵니다.
-
-    :param db: 비동기 데이터베이스 세션
-    :param db_post: 좋아요를 추가할 게시글 모델
-    :param user_id: 좋아요를 누른 사용자 ID
-    :return: 업데이트된 게시글 모델
-    """
-    like = PostLike(post_id=db_post.id, user_id=user_id)
-    db.add(like)
-
-    stmt = (
-        update(Post)
-        .where(Post.id == db_post.id)
-        .values(likes=Post.likes + 1)
-        .execution_options(synchronize_session=False)
-    )
-    await db.execute(stmt)
-    return await commit_and_refresh(db, db_post)
-
-
-async def remove_like(db: AsyncSession, db_post: Post, like: PostLike) -> Post:
-    """
-    게시글 좋아요를 취소하고, 게시글의 좋아요 수를 원자적으로 감소시킵니다.
-
-    :param db: 비동기 데이터베이스 세션
-    :param db_post: 좋아요를 취소할 게시글 모델
-    :param like: 삭제할 PostLike 모델
-    :return: 업데이트된 게시글 모델
-    """
-    stmt = (
-        update(Post)
-        .where(Post.id == db_post.id, Post.likes > 0)
-        .values(likes=Post.likes - 1)
-        .execution_options(synchronize_session=False)
-    )
-    await db.execute(stmt)
-    await db.delete(like)
-    return await commit_and_refresh(db, db_post)
-
-
-async def toggle_like(db: AsyncSession, db_post: Post, user_id: str) -> Post:
-    """
-    게시글 좋아요를 토글합니다. 좋아요가 없으면 추가하고, 있으면 취소합니다.
-
-    :param db: 비동기 데이터베이스 세션
-    :param db_post: 좋아요를 토글할 게시글 모델
-    :param user_id: 사용자 ID
-    :return: 업데이트된 게시글 모델
-    """
-    like = await get_like_by_user(db, db_post.id, user_id)
-
-    if like:
-        return await remove_like(db, db_post, like)
-    else:
-        return await add_like(db, db_post, user_id)
 
 
 async def increment_comment_count(db: AsyncSession, db_post: Post) -> Post:
