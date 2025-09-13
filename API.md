@@ -42,9 +42,9 @@ Authorization: Bearer <your-jwt-token>
 
 ### 1.1 사용자 로그인
 
-**POST** `/auth/login`
+**POST** `/auth/token`
 
-사용자 이메일과 비밀번호로 로그인합니다.
+사용자 이메일과 비밀번호로 토큰을 발급받습니다.
 
 #### Request Body
 
