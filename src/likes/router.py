@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, status
 
 from src.db.session import DbSession
-from src.likes import schemas, service
+from src.likes import crud, schemas, service
 from src.likes.dependencies import OwnerLike
 from src.likes.models import PostLike
 from src.posts.dependencies import ValidPost
@@ -61,8 +61,6 @@ async def handle_toggle_like(
     )
 
     # 현재 게시글의 총 좋아요 수 조회
-    from src.likes import crud
-
     total_likes = await crud.get_total_likes_count_by_post(db=db, post_id=db_post.id)
 
     return schemas.LikeToggleResponse(
@@ -187,8 +185,6 @@ async def handle_check_like_status(
     )
 
     # 총 좋아요 수도 함께 조회
-    from src.likes import crud
-
     total_likes = await crud.get_total_likes_count_by_post(db=db, post_id=db_post.id)
 
     return {
