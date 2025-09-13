@@ -65,3 +65,5 @@ src/comments/README.md
 src/likes/README.md
 src/notifications/README.md
 tests/README.md
+
+.github/instructions/*
