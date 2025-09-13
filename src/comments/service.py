@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.comments import crud, models, schemas
+from src.posts.crud import decrement_comment_count, get_post, increment_comment_count
 from src.users.models import User as models_User
 
 
@@ -18,11 +19,22 @@ async def create_comment(
     :param db_user: 댓글 작성자의 사용자 모델
     :return: 생성된 댓글 모델
     """
-    created_comment = await crud.create_comment(
-        db=db, comment_in=comment_create, user_id=db_user.id
-    )
+    # 명시적으로 트랜잭션 시작
+    async with db.begin():
+        created_comment = await crud.create_comment(
+            db=db, comment_in=comment_create, user_id=db_user.id
+        )
 
-    return created_comment
+        db_post = await get_post(db, comment_create.post_id)
+        if not db_post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="게시글을 찾을 수 없습니다",
+            )
+
+        await increment_comment_count(db, db_post)
+
+        return created_comment
 
 
 async def get_comment_by_id(db: AsyncSession, comment_id: str) -> models.PostComment:
@@ -89,8 +101,16 @@ async def deactivate_comment(
     :param db_comment: 데이터베이스에서 조회된 댓글 모델
     :return: 비활성화된 댓글 모델
     """
-    deactivated_comment = await crud.deactivate_comment(db=db, db_comment=db_comment)
-    return deactivated_comment
+    async with db.begin():
+        deactivated_comment = await crud.deactivate_comment(
+            db=db, db_comment=db_comment
+        )
+
+        db_post = await get_post(db, db_comment.post_id)
+        if db_post:
+            await decrement_comment_count(db, db_post)
+
+        return deactivated_comment
 
 
 async def delete_comment(
@@ -104,4 +124,9 @@ async def delete_comment(
     :param db_comment: 데이터베이스에서 조회된 댓글 모델
     :return: None
     """
-    await crud.delete_comment(db=db, db_comment=db_comment)
+    async with db.begin():
+        await crud.delete_comment(db=db, db_comment=db_comment)
+
+        db_post = await get_post(db, db_comment.post_id)
+        if db_post:
+            await decrement_comment_count(db, db_post)

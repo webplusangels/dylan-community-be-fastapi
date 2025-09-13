@@ -22,8 +22,13 @@ async def create_comment(
     :param user_id: 댓글 작성자의 사용자 ID
     :return: 생성된 댓글 모델
     """
-    db_comment = PostComment(**comment_in.model_dump(), user_id=user_id)
-    return await add_and_commit(db, db_comment)
+    db_comment = PostComment(
+        **comment_in.model_dump(),
+        user_id=user_id,
+        created_at=datetime.now(timezone.utc),
+    )
+    await add_and_commit(db, db_comment)
+    return db_comment
 
 
 async def get_comment(db: AsyncSession, comment_id: str) -> PostComment | None:
@@ -73,7 +78,7 @@ async def get_total_comments_count(db: AsyncSession, post_id: str) -> int:
     stmt = (
         PostComment.active_query()
         .where(PostComment.post_id == post_id)
-        .with_only_columns([func.count(PostComment.id)])
+        .with_only_columns(func.count(PostComment.id))
     )
     result = await db.execute(stmt)
     return result.scalar_one() or 0
@@ -92,8 +97,6 @@ async def update_comment(
     :raises HTTPException: 댓글 업데이트 중 오류가 발생한 경우
     """
     update_data = comment_update.model_dump(exclude_unset=True)
-    if not update_data:
-        return db_comment
 
     for key, value in update_data.items():
         setattr(db_comment, key, value)
@@ -121,15 +124,13 @@ async def deactivate_comment(db: AsyncSession, db_comment: PostComment) -> PostC
         db_comment.is_active = False
 
         try:
-            return await commit_and_refresh(db, db_comment)
+            await commit_and_refresh(db, db_comment)
+            return db_comment
         except IntegrityError as err:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"댓글 비활성화 중 오류가 발생했습니다: {err.orig}",
             ) from err
-
-    # 이미 비활성화된 댓글인 경우
-    return db_comment
 
 
 async def delete_comment(db: AsyncSession, db_comment: PostComment) -> bool:

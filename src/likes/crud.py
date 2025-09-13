@@ -21,7 +21,8 @@ async def create_like(db: AsyncSession, like_in: PostLikeBase) -> PostLike:
     """
     db_like = PostLike(**like_in.model_dump())
     try:
-        return await add_and_commit(db, db_like)
+        await add_and_commit(db, db_like)
+        return db_like
     except IntegrityError as err:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

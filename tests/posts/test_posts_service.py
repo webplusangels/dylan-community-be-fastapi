@@ -305,6 +305,7 @@ async def test_search_posts_service_success(mocker):
     # Arrange
     mock_db = AsyncMock()
     query = "test"
+    skip = 0
     limit = 5
     posts_mock = [
         models.Post(id="p1", title="Test Post 1", content="Content 1"),
@@ -316,8 +317,12 @@ async def test_search_posts_service_success(mocker):
     )
 
     # Act
-    result_posts = await service.search_posts(db=mock_db, query=query, limit=limit)
+    result_posts = await service.search_posts(
+        db=mock_db, query=query, skip=skip, limit=limit
+    )
 
     # Assert
-    mock_crud_search_posts.assert_called_once_with(db=mock_db, query=query, limit=limit)
+    mock_crud_search_posts.assert_called_once_with(
+        db=mock_db, query=query, skip=skip, limit=limit
+    )
     assert result_posts == posts_mock

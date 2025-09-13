@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.sql import func
 
 from src.core.config import settings
 
@@ -95,46 +94,3 @@ class SoftDeleteMixin:
             deleted_users = result.scalars().all()
         """
         return select(cls).where(cls.is_active.is_(False) | cls.deleted_at.is_not(None))
-
-    def soft_delete(self) -> None:
-        """
-        레코드를 소프트 삭제합니다.
-
-        is_active를 False로 설정하고 deleted_at에 현재 시간을 기록합니다.
-        실제 데이터베이스에서 레코드를 삭제하지는 않습니다.
-
-        사용 예시:
-            user = await session.get(User, user_id)
-            user.soft_delete()
-            await session.commit()
-        """
-        self.is_active = False
-        self.deleted_at = func.now()
-
-    def restore(self) -> None:
-        """
-        소프트 삭제된 레코드를 복원합니다.
-
-        is_active를 True로 설정하고 deleted_at을 None으로 초기화합니다.
-
-        사용 예시:
-            user = await session.get(User, user_id)
-            user.restore()
-            await session.commit()
-        """
-        self.is_active = True
-        self.deleted_at = None
-
-    @property
-    def is_deleted(self) -> bool:
-        """
-        레코드가 삭제되었는지 확인합니다.
-
-        :return: 삭제되었으면 True, 아니면 False
-        :rtype: bool
-
-        사용 예시:
-            if user.is_deleted:
-                print("사용자가 삭제되었습니다.")
-        """
-        return not self.is_active or self.deleted_at is not None
