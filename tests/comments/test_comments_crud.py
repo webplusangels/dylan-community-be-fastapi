@@ -9,6 +9,7 @@ from src.comments import schemas
 from src.comments.crud import (
     create_comment,
     deactivate_comment,
+    delete_comment,
     get_comment,
     get_comments,
     get_total_comments_count,
@@ -190,8 +191,6 @@ async def test_delete_comment_success(db_session: AsyncSession):
     )
 
     # Act
-    from src.comments.crud import delete_comment
-
     result = await delete_comment(db=db_session, db_comment=db_comment)
 
     # Assert
@@ -219,8 +218,6 @@ async def test_delete_comment_fail(db_session: AsyncSession, mocker):
     )
 
     # Act & Assert
-    from src.comments.crud import delete_comment
-
     with pytest.raises(HTTPException) as exc_info:
         await delete_comment(db=db_session, db_comment=db_comment)
 
