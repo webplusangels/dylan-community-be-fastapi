@@ -39,7 +39,11 @@ async def get_comment(db: AsyncSession, comment_id: str) -> PostComment | None:
     :param comment_id: 조회할 댓글 ID
     :return: 댓글 모델 또는 None
     """
-    stmt = PostComment.active_query().where(PostComment.id == comment_id)
+    # Eager-load the author to avoid triggering lazy async IO during
+    # response serialization (Pydantic will access `author` attribute).
+    stmt = PostComment.with_author(PostComment.active_query()).where(
+        PostComment.id == comment_id
+    )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -56,8 +60,10 @@ async def get_comments(
     :param limit: 조회할 댓글 수 (페이징)
     :return: 댓글 모델 리스트
     """
+    # Eager-load authors for the comments list to avoid lazy-loading in sync
+    # during response serialization.
     stmt = (
-        PostComment.active_query()
+        PostComment.with_author(PostComment.active_query())
         .where(PostComment.post_id == post_id)
         .order_by(PostComment.created_at.desc())
         .offset(skip)
